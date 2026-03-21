@@ -13,33 +13,34 @@ export function RegisterPage() {
     name: '',
     email: '',
     password: '',
-    confirmPassword: '',
+    password_confirmation: '',
   });
-  const [errors, setErrors] = useState<Partial<typeof form>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
   const [serverError, setServerError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const validate = (): boolean => {
-    const next: Partial<typeof form> = {};
+    const next: Partial<Record<keyof typeof form, string>> = {};
     if (!form.name.trim()) next.name = 'El nombre es requerido.';
     if (!form.email.trim()) next.email = 'El correo es requerido.';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       next.email = 'Ingresa un correo válido.';
     if (!form.password) next.password = 'La contraseña es requerida.';
-    else if (form.password.length < 8)
-      next.password = 'Mínimo 8 caracteres.';
-    if (!form.confirmPassword)
-      next.confirmPassword = 'Confirma tu contraseña.';
-    else if (form.password !== form.confirmPassword)
-      next.confirmPassword = 'Las contraseñas no coinciden.';
+    else if (form.password.length < 6)
+      next.password = 'Mínimo 6 caracteres.';
+    if (!form.password_confirmation)
+      next.password_confirmation = 'Confirma tu contraseña.';
+    else if (form.password !== form.password_confirmation)
+      next.password_confirmation = 'Las contraseñas no coinciden.';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
-  const handleChange = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
+  const handleChange =
+    (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+      if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+    };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -59,10 +60,7 @@ export function RegisterPage() {
   };
 
   return (
-    <AuthLayout
-      title="Crear cuenta"
-      subtitle="Completa el formulario para empezar"
-    >
+    <AuthLayout title="Crear cuenta" subtitle="Completa el formulario para empezar">
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         {serverError && <Alert variant="error">{serverError}</Alert>}
 
@@ -104,7 +102,7 @@ export function RegisterPage() {
           id="password"
           type="password"
           label="Contraseña"
-          placeholder="Mínimo 8 caracteres"
+          placeholder="Mínimo 6 caracteres"
           value={form.password}
           onChange={handleChange('password')}
           error={errors.password}
@@ -118,13 +116,13 @@ export function RegisterPage() {
         />
 
         <Input
-          id="confirmPassword"
+          id="password_confirmation"
           type="password"
           label="Confirmar contraseña"
           placeholder="Repite tu contraseña"
-          value={form.confirmPassword}
-          onChange={handleChange('confirmPassword')}
-          error={errors.confirmPassword}
+          value={form.password_confirmation}
+          onChange={handleChange('password_confirmation')}
+          error={errors.password_confirmation}
           disabled={isLoading}
           autoComplete="new-password"
           leftIcon={

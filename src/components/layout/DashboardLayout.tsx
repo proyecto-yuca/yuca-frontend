@@ -31,10 +31,15 @@ function SidebarContent({ onClose }: SidebarContentProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    authService.logout();
-    signOut();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // proceed with local sign-out even if the API call fails
+    } finally {
+      signOut();
+      navigate('/login');
+    }
   };
 
   return (
@@ -185,7 +190,7 @@ export function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
             <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-100">
               <div className="hidden sm:block text-right min-w-0">
                 <p className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[120px]">{user?.name}</p>
-                <p className="text-[10px] text-slate-400 leading-tight capitalize">{user?.role ?? 'Usuario'}</p>
+                <p className="text-[10px] text-slate-400 leading-tight">{user?.email}</p>
               </div>
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold ring-2 ring-indigo-100">
                 {user?.name?.charAt(0).toUpperCase() ?? 'U'}

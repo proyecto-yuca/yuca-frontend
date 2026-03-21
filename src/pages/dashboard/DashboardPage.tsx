@@ -269,8 +269,8 @@ export function DashboardPage() {
                 <div>
                   <p className="font-semibold text-slate-900">{displayUser?.name}</p>
                   <p className="text-xs text-slate-500 mt-0.5 break-all">{displayUser?.email}</p>
-                  <span className="mt-2 inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 capitalize ring-1 ring-indigo-200/60">
-                    {displayUser?.role ?? 'Usuario'}
+                  <span className="mt-2 inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200/60">
+                    Usuario
                   </span>
                 </div>
               </div>
@@ -279,8 +279,8 @@ export function DashboardPage() {
                 <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
                   <span className="text-xs text-slate-500">Miembro desde</span>
                   <span className="text-xs font-medium text-slate-700">
-                    {displayUser?.createdAt
-                      ? new Date(displayUser.createdAt).toLocaleDateString('es-CO', {
+                    {displayUser?.created_at
+                      ? new Date(displayUser.created_at).toLocaleDateString('es-CO', {
                           year: 'numeric',
                           month: 'short',
                         })

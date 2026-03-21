@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
 const publicClient = axios.create({
   baseURL: BASE_URL,
@@ -13,8 +13,12 @@ const publicClient = axios.create({
 publicClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    const data = error.response?.data;
     const message =
-      error.response?.data?.message ?? 'Ha ocurrido un error inesperado.';
+      (Array.isArray(data?.errors) ? data.errors.join(', ') : null) ??
+      data?.error ??
+      data?.message ??
+      'Ha ocurrido un error inesperado.';
     return Promise.reject(new Error(message));
   },
 );

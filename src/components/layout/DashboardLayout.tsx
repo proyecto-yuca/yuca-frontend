@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import authService from '../../services/auth/authService';
@@ -22,15 +22,14 @@ const navItems: NavItem[] = [
   },
 ];
 
-interface DashboardLayoutProps {
-  children: ReactNode;
+interface SidebarContentProps {
+  onClose?: () => void;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+function SidebarContent({ onClose }: SidebarContentProps) {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     authService.logout();
@@ -38,27 +37,30 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     navigate('/login');
   };
 
-  const Sidebar = () => (
+  return (
     <div className="flex h-full flex-col bg-white border-r border-slate-100">
-      <div className="flex h-16 items-center gap-2 px-6 border-b border-slate-100">
+      <div className="flex h-16 shrink-0 items-center gap-2.5 px-5 border-b border-slate-100">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <span className="text-lg font-bold text-slate-900 tracking-tight">Yuca</span>
+        <span className="text-[15px] font-bold text-slate-900 tracking-tight">Yuca</span>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+        <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+          General
+        </p>
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           return (
             <Link
               key={item.to}
               to={item.to}
-              onClick={() => setSidebarOpen(false)}
+              onClick={onClose}
               className={[
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-100',
                 isActive
                   ? 'bg-indigo-50 text-indigo-700'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
@@ -68,26 +70,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {item.icon}
               </span>
               {item.label}
+              {isActive && (
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-slate-100 p-3">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold">
+      <div className="shrink-0 border-t border-slate-100 p-3 space-y-1">
+        <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold">
             {user?.name?.charAt(0).toUpperCase() ?? 'U'}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-900 truncate">{user?.name}</p>
-            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+            <p className="text-sm font-semibold text-slate-900 truncate leading-tight">{user?.name}</p>
+            <p className="text-xs text-slate-500 truncate leading-tight">{user?.email}</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors duration-100"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
           Cerrar sesión
@@ -95,45 +100,103 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
     </div>
   );
+}
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+  pageTitle?: string;
+}
+
+export function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
+  const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
-      <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
-        <Sidebar />
+      <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:fixed lg:inset-y-0 z-30">
+        <SidebarContent />
       </aside>
 
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="fixed inset-y-0 left-0 w-64 z-50">
-            <Sidebar />
-          </div>
+      {/* Mobile drawer */}
+      <div
+        className={[
+          'fixed inset-0 z-40 lg:hidden transition-opacity duration-200',
+          sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        ].join(' ')}
+      >
+        <div
+          ref={overlayRef}
+          className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+        <div
+          className={[
+            'absolute inset-y-0 left-0 w-64 z-50 transition-transform duration-200 ease-out',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          ].join(' ')}
+        >
+          <SidebarContent onClose={() => setSidebarOpen(false)} />
         </div>
-      )}
+      </div>
 
-      <div className="flex flex-1 flex-col lg:pl-64 min-w-0">
-        <header className="flex h-16 items-center gap-4 border-b border-slate-100 bg-white px-6">
+      <div className="flex flex-1 flex-col lg:pl-64 min-w-0 overflow-hidden">
+        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-100 bg-white/80 backdrop-blur-sm px-4 sm:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden -ml-1 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none"
+            className="lg:hidden -ml-1 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
             aria-label="Abrir menú"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
+
+          {pageTitle && (
+            <h1 className="text-sm font-semibold text-slate-900 truncate lg:hidden">{pageTitle}</h1>
+          )}
+
           <div className="flex-1" />
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-sm font-semibold">
-              {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              aria-label="Notificaciones"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white" />
+            </button>
+
+            <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-100">
+              <div className="hidden sm:block text-right min-w-0">
+                <p className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[120px]">{user?.name}</p>
+                <p className="text-[10px] text-slate-400 leading-tight capitalize">{user?.role ?? 'Usuario'}</p>
+              </div>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold ring-2 ring-indigo-100">
+                {user?.name?.charAt(0).toUpperCase() ?? 'U'}
+              </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-4 sm:px-6 py-6">{children}</div>
+        </main>
       </div>
     </div>
   );

@@ -1,0 +1,29 @@
+name: yuca-frontend
+
+services:
+  # Development — hot reload via Vite dev server
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env.local
+    profiles:
+      - dev
+
+  # Production — built assets served by nginx
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    ports:
+      - "80:80"
+    profiles:
+      - prod

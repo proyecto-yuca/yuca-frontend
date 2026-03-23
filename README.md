@@ -71,3 +71,6 @@ export default defineConfig([
   },
 ])
 ```
+
+
+docker compose --env-file .env.local --profile dev up --build

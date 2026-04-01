@@ -9,11 +9,11 @@ interface AuthLayoutProps {
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <div className="hidden lg:flex lg:w-1/2 relative bg-indigo-600 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800" />
+      <div className="hidden lg:flex lg:w-1/2 relative bg-forest-600 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-forest-600 via-forest-700 to-forest-800" />
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-violet-300 blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-earth-300 blur-3xl" />
         </div>
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div className="flex items-center gap-2">
@@ -28,7 +28,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             <h2 className="text-4xl font-bold text-white leading-tight">
               La plataforma<br />que impulsa tu negocio
             </h2>
-            <p className="text-indigo-200 text-lg leading-relaxed max-w-sm">
+            <p className="text-forest-200 text-lg leading-relaxed max-w-sm">
               Gestiona, analiza y crece con herramientas diseñadas para los líderes del mañana.
             </p>
           </div>
@@ -46,7 +46,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-forest-600">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>

@@ -1,5 +1,31 @@
 @import "tailwindcss";
 
+@theme {
+  /* Verde Bosque — #2E632B */
+  --color-forest-50:  #edf5ec;
+  --color-forest-100: #d4e9d3;
+  --color-forest-200: #a8d3a5;
+  --color-forest-300: #78b975;
+  --color-forest-400: #4e9b4b;
+  --color-forest-500: #3a7a38;
+  --color-forest-600: #2E632B;
+  --color-forest-700: #254f22;
+  --color-forest-800: #1a3a18;
+  --color-forest-900: #0f2210;
+
+  /* Marrón Tierra — #A68B67 */
+  --color-earth-50:  #f8f3ee;
+  --color-earth-100: #ede0d0;
+  --color-earth-200: #d9c2a4;
+  --color-earth-300: #c4a478;
+  --color-earth-400: #b5966d;
+  --color-earth-500: #A68B67;
+  --color-earth-600: #8c7354;
+  --color-earth-700: #715b42;
+  --color-earth-800: #564430;
+  --color-earth-900: #3b2e20;
+}
+
 @layer base {
   *, *::before, *::after {
     box-sizing: border-box;

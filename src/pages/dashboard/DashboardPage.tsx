@@ -20,8 +20,8 @@ const stats: StatCard[] = [
     value: '2,847',
     change: '+12.5%',
     positive: true,
-    iconBg: 'bg-indigo-50',
-    iconColor: 'text-indigo-600',
+    iconBg: 'bg-forest-50',
+    iconColor: 'text-forest-600',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -46,8 +46,8 @@ const stats: StatCard[] = [
     value: '342',
     change: '-3.1%',
     positive: false,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-600',
+    iconBg: 'bg-earth-50',
+    iconColor: 'text-earth-500',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -59,8 +59,8 @@ const stats: StatCard[] = [
     value: '94.3%',
     change: '+1.8%',
     positive: true,
-    iconBg: 'bg-violet-50',
-    iconColor: 'text-violet-600',
+    iconBg: 'bg-earth-50',
+    iconColor: 'text-earth-600',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -70,10 +70,10 @@ const stats: StatCard[] = [
 ];
 
 const recentActivity = [
-  { id: 1, name: 'María López', action: 'Se registró en la plataforma', time: 'Hace 5 min', initials: 'ML', color: 'bg-indigo-100 text-indigo-700' },
-  { id: 2, name: 'Carlos Ruiz', action: 'Actualizó su perfil', time: 'Hace 12 min', initials: 'CR', color: 'bg-emerald-100 text-emerald-700' },
-  { id: 3, name: 'Ana Torres', action: 'Completó su primer pedido', time: 'Hace 28 min', initials: 'AT', color: 'bg-violet-100 text-violet-700' },
-  { id: 4, name: 'Luis Moreno', action: 'Cambió su contraseña', time: 'Hace 1 h', initials: 'LM', color: 'bg-amber-100 text-amber-700' },
+  { id: 1, name: 'María López', action: 'Se registró en la plataforma', time: 'Hace 5 min', initials: 'ML', color: 'bg-forest-100 text-forest-700' },
+  { id: 2, name: 'Carlos Ruiz', action: 'Actualizó su perfil', time: 'Hace 12 min', initials: 'CR', color: 'bg-forest-200 text-forest-800' },
+  { id: 3, name: 'Ana Torres', action: 'Completó su primer pedido', time: 'Hace 28 min', initials: 'AT', color: 'bg-earth-100 text-earth-700' },
+  { id: 4, name: 'Luis Moreno', action: 'Cambió su contraseña', time: 'Hace 1 h', initials: 'LM', color: 'bg-earth-200 text-earth-800' },
   { id: 5, name: 'Sofía Jiménez', action: 'Se suscribió al plan Pro', time: 'Hace 2 h', initials: 'SJ', color: 'bg-rose-100 text-rose-700' },
 ];
 
@@ -85,7 +85,7 @@ const quickActions = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
       </svg>
     ),
-    color: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+    color: 'bg-forest-50 text-forest-700 hover:bg-forest-100',
   },
   {
     label: 'Ver reportes',
@@ -113,7 +113,7 @@ const quickActions = [
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
       </svg>
     ),
-    color: 'bg-violet-50 text-violet-700 hover:bg-violet-100',
+    color: 'bg-earth-50 text-earth-700 hover:bg-earth-100',
   },
 ];
 
@@ -156,8 +156,8 @@ export function DashboardPage() {
             <p className="mt-0.5 text-sm text-slate-500 capitalize">{today}</p>
           </div>
           <div className="flex items-center gap-2 mt-3 sm:mt-0">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-forest-50 px-3 py-1 text-xs font-medium text-forest-700 ring-1 ring-forest-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-forest-500" />
               Sistema operativo
             </span>
           </div>
@@ -230,7 +230,7 @@ export function DashboardPage() {
                 <h2 className="text-sm font-semibold text-slate-900">Actividad reciente</h2>
                 <p className="text-xs text-slate-400 mt-0.5">Últimas acciones en la plataforma</p>
               </div>
-              <button className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition-colors">
+              <button className="text-xs font-medium text-forest-600 hover:text-forest-700 hover:underline transition-colors">
                 Ver todo
               </button>
             </div>
@@ -259,7 +259,7 @@ export function DashboardPage() {
             <div className="px-4 sm:px-5 py-5">
               <div className="flex flex-col items-center gap-3 text-center">
                 <div className="relative">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-indigo-600 text-white text-2xl font-bold ring-4 ring-indigo-50">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-forest-600 text-white text-2xl font-bold ring-4 ring-forest-50">
                     {displayUser?.name?.charAt(0).toUpperCase() ?? 'U'}
                   </div>
                   <span className="absolute bottom-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white">
@@ -269,7 +269,7 @@ export function DashboardPage() {
                 <div>
                   <p className="font-semibold text-slate-900">{displayUser?.name}</p>
                   <p className="text-xs text-slate-500 mt-0.5 break-all">{displayUser?.email}</p>
-                  <span className="mt-2 inline-block rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200/60">
+                  <span className="mt-2 inline-block rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-medium text-forest-700 ring-1 ring-forest-200/60">
                     Usuario
                   </span>
                 </div>
@@ -296,7 +296,7 @@ export function DashboardPage() {
                 </div>
                 <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
                   <span className="text-xs text-slate-500">Plan actual</span>
-                  <span className="text-xs font-medium text-indigo-700">Pro</span>
+                  <span className="text-xs font-medium text-earth-600">Pro</span>
                 </div>
               </div>
             </div>

@@ -45,7 +45,7 @@ function SidebarContent({ onClose }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col bg-white border-r border-slate-100">
       <div className="flex h-16 shrink-0 items-center gap-2.5 px-5 border-b border-slate-100">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-forest-600">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
@@ -67,16 +67,16 @@ function SidebarContent({ onClose }: SidebarContentProps) {
               className={[
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-100',
                 isActive
-                  ? 'bg-indigo-50 text-indigo-700'
+                  ? 'bg-forest-50 text-forest-700'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
               ].join(' ')}
             >
-              <span className={isActive ? 'text-indigo-600' : 'text-slate-400'}>
+              <span className={isActive ? 'text-forest-600' : 'text-slate-400'}>
                 {item.icon}
               </span>
               {item.label}
               {isActive && (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-forest-500" />
               )}
             </Link>
           );
@@ -85,7 +85,7 @@ function SidebarContent({ onClose }: SidebarContentProps) {
 
       <div className="shrink-0 border-t border-slate-100 p-3 space-y-1">
         <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-600 text-white text-xs font-bold">
             {user?.name?.charAt(0).toUpperCase() ?? 'U'}
           </div>
           <div className="flex-1 min-w-0">
@@ -162,7 +162,7 @@ export function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
         <header className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-100 bg-white/80 backdrop-blur-sm px-4 sm:px-6">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden -ml-1 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors"
+            className="lg:hidden -ml-1 rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-500 transition-colors"
             aria-label="Abrir menú"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,13 +178,13 @@ export function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <button
-              className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+              className="relative rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-500"
               aria-label="Notificaciones"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-indigo-500 ring-2 ring-white" />
+              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-forest-500 ring-2 ring-white" />
             </button>
 
             <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-100">
@@ -192,7 +192,7 @@ export function DashboardLayout({ children, pageTitle }: DashboardLayoutProps) {
                 <p className="text-xs font-semibold text-slate-900 leading-tight truncate max-w-[120px]">{user?.name}</p>
                 <p className="text-[10px] text-slate-400 leading-tight">{user?.email}</p>
               </div>
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white text-xs font-bold ring-2 ring-indigo-100">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-600 text-white text-xs font-bold ring-2 ring-forest-100">
                 {user?.name?.charAt(0).toUpperCase() ?? 'U'}
               </div>
             </div>

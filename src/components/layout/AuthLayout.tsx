@@ -24,15 +24,26 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
             </div>
             <span className="text-xl font-bold text-white tracking-tight">Yuca</span>
           </div>
-          <div className="space-y-4">
-            <h2 className="text-4xl font-bold text-white leading-tight">
-              La plataforma<br />que impulsa tu negocio
-            </h2>
-            <p className="text-forest-200 text-lg leading-relaxed max-w-sm">
-              Gestiona, analiza y crece con herramientas diseñadas para los líderes del mañana.
-            </p>
+
+          <div className="flex flex-col items-center gap-8">
+            <div className="flex items-center justify-center w-64 h-64 rounded-full bg-white p-5 shadow-2xl">
+              <img
+                src="/logo.png"
+                alt="Agricultura 4.0"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="space-y-3 text-center">
+              <h2 className="text-4xl font-bold text-white leading-tight">
+                La plataforma<br />que impulsa tu negocio
+              </h2>
+              <p className="text-forest-200 text-lg leading-relaxed max-w-sm">
+                Gestiona, analiza y crece con herramientas diseñadas para los líderes del mañana.
+              </p>
+            </div>
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex gap-3 justify-center">
             {[0, 1, 2].map((i) => (
               <div
                 key={i}
@@ -46,11 +57,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 lg:px-12">
         <div className="w-full max-w-md">
           <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-forest-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
+            <img src="/logo.png" alt="Yuca" className="h-10 w-10 object-contain" />
             <span className="text-xl font-bold text-slate-900 tracking-tight">Yuca</span>
           </div>
 

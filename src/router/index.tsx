@@ -6,6 +6,8 @@ import { RegisterPage } from '../pages/auth/RegisterPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
+import { LotesPage } from '../pages/lotes/LotesPage';
+import { LoteSensoresPage } from '../pages/lotes/LoteSensoresPage';
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +23,8 @@ export const router = createBrowserRouter([
     element: <PrivateRoute />,
     children: [
       { path: '/dashboard', element: <DashboardPage /> },
+      { path: '/dashboard/lotes', element: <LotesPage /> },
+      { path: '/dashboard/lotes/:loteId/sensores', element: <LoteSensoresPage /> },
     ],
   },
   {

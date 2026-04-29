@@ -453,7 +453,7 @@ export function FincasPage() {
   };
 
   const openEdit = (finca: Finca) => {
-    setEditingFinca(lote);
+    setEditingFinca(finca);
     setForm(fincaToForm(finca));
     setFormErrors({});
     setFormError('');
@@ -601,6 +601,11 @@ export function FincasPage() {
 
         {/* Table */}
         <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          {listError && (
+            <div className="px-4 pt-4">
+              <Alert variant="error">{listError}</Alert>
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -770,9 +775,9 @@ export function FincasPage() {
         }
       >
         {formError && (
-          <Alert variant="error" className="mb-4">
-            {formError}
-          </Alert>
+          <div className="mb-4">
+            <Alert variant="error">{formError}</Alert>
+          </div>
         )}
         <LoteForm form={form} errors={formErrors} onChange={setForm} />
       </Modal>

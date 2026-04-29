@@ -6,6 +6,7 @@ interface AlertProps {
   variant?: AlertVariant;
   title?: string;
   children: ReactNode;
+  className?: string;
 }
 
 const variantConfig: Record<
@@ -46,11 +47,11 @@ const variantConfig: Record<
   },
 };
 
-export function Alert({ variant = 'info', title, children }: AlertProps) {
+export function Alert({ variant = 'info', title, children, className }: AlertProps) {
   const config = variantConfig[variant];
 
   return (
-    <div className={`flex gap-3 rounded-lg border p-3 text-sm ${config.container}`}>
+    <div className={`flex gap-3 rounded-lg border p-3 text-sm ${config.container}${className ? ` ${className}` : ''}`}>
       <span className="mt-0.5">{config.icon}</span>
       <div className="flex flex-col gap-0.5">
         {title && <p className="font-semibold">{title}</p>}

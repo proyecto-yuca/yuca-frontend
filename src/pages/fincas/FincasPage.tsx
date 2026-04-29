@@ -391,6 +391,7 @@ export function FincasPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [listError, setListError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FincaFilters>({ search: '', estado: 'todos' });
 
   // Modal states
@@ -418,12 +419,15 @@ export function FincasPage() {
 
   const fetchLotes = useCallback(async () => {
     setLoading(true);
+    setListError(null);
     try {
       const result = await fincasService.getAll(filters, page, PAGE_SIZE);
       setFincas(result.data);
       setTotal(result.total);
       setTotalPages(result.totalPages);
       if (result.page !== page) setPage(result.page);
+    } catch (err) {
+      setListError(err instanceof Error ? err.message : 'Error al cargar las fincas.');
     } finally {
       setLoading(false);
     }

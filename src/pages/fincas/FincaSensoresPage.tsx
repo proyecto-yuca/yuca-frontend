@@ -4,6 +4,7 @@ import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { Alert } from '../../components/ui/Alert';
 import sensoresService from '../../services/sensores/sensoresService';
 import fincasService from '../../services/fincas/fincasService';
 import type { LecturaSensor, SensoresFilters, ResumenSensores } from '../../types/sensores.types';
@@ -201,7 +202,7 @@ function Pagination({ page, totalPages, total, pageSize, onPageChange }: Paginat
 export function FincaSensoresPage() {
   const { fincaId } = useParams<{ fincaId: string }>();
 
-  const [finca, setFinca] = useState<Lote | null>(null);
+  const [finca, setFinca] = useState<Finca | null>(null);
   const [lecturas, setLecturas] = useState<LecturaSensor[]>([]);
   const [resumen, setResumen] = useState<ResumenSensores | null>(null);
   const [total, setTotal] = useState(0);
@@ -209,6 +210,7 @@ export function FincaSensoresPage() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const defaults = getDefaultDateRange();
@@ -224,7 +226,7 @@ export function FincaSensoresPage() {
   // Load finca info once
   useEffect(() => {
     if (!fincaId) return;
-    fincasService.getById(fincaId).then(setLote).catch(() => {});
+    fincasService.getById(fincaId).then(setFinca).catch(() => {});
   }, [fincaId]);
 
   const fetchData = useCallback(
@@ -232,6 +234,7 @@ export function FincaSensoresPage() {
       if (!fincaId) return;
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
+      setFetchError(null);
 
       try {
         const result = await sensoresService.getLecturasByFinca(fincaId, filters, page, PAGE_SIZE);
@@ -241,6 +244,8 @@ export function FincaSensoresPage() {
         setResumen(result.resumen);
         if (result.page !== page) setPage(result.page);
         setLastRefresh(new Date());
+      } catch (err) {
+        setFetchError(err instanceof Error ? err.message : 'Error al cargar las lecturas.');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -477,6 +482,12 @@ export function FincaSensoresPage() {
 
         {/* Table */}
         <div className="rounded-xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+          {/* API error banner */}
+          {fetchError && (
+            <div className="px-4 pt-4">
+              <Alert variant="error">{fetchError}</Alert>
+            </div>
+          )}
           {/* Table info bar */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/60">
             <div className="flex items-center gap-2">

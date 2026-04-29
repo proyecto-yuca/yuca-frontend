@@ -201,7 +201,7 @@ function Pagination({ page, totalPages, total, pageSize, onPageChange }: Paginat
 export function FincaSensoresPage() {
   const { fincaId } = useParams<{ fincaId: string }>();
 
-  const [finca, setFinca] = useState<Lote | null>(null);
+  const [finca, setFinca] = useState<Finca | null>(null);
   const [lecturas, setLecturas] = useState<LecturaSensor[]>([]);
   const [resumen, setResumen] = useState<ResumenSensores | null>(null);
   const [total, setTotal] = useState(0);
@@ -224,7 +224,7 @@ export function FincaSensoresPage() {
   // Load finca info once
   useEffect(() => {
     if (!fincaId) return;
-    fincasService.getById(fincaId).then(setLote).catch(() => {});
+    fincasService.getById(fincaId).then(setFinca).catch(() => {});
   }, [fincaId]);
 
   const fetchData = useCallback(

@@ -449,7 +449,7 @@ export function FincasPage() {
   };
 
   const openEdit = (finca: Finca) => {
-    setEditingFinca(lote);
+    setEditingFinca(finca);
     setForm(fincaToForm(finca));
     setFormErrors({});
     setFormError('');
@@ -766,9 +766,9 @@ export function FincasPage() {
         }
       >
         {formError && (
-          <Alert variant="error" className="mb-4">
-            {formError}
-          </Alert>
+          <div className="mb-4">
+            <Alert variant="error">{formError}</Alert>
+          </div>
         )}
         <LoteForm form={form} errors={formErrors} onChange={setForm} />
       </Modal>

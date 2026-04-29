@@ -60,8 +60,8 @@ function classifyEstado(humedad: number, temperatura: number): EstadoLectura {
   return 'normal';
 }
 
-function generateReadingsForLote(loteId: string): LecturaSensor[] {
-  const config = SENSOR_CONFIG[loteId] ?? DEFAULT_CONFIG;
+function generateReadingsForFinca(fincaId: string): LecturaSensor[] {
+  const config = SENSOR_CONFIG[fincaId] ?? DEFAULT_CONFIG;
   const readings: LecturaSensor[] = [];
   const today = new Date();
 
@@ -72,7 +72,7 @@ function generateReadingsForLote(loteId: string): LecturaSensor[] {
     const fechaStr = d.toISOString().split('T')[0];
 
     for (let r = 0; r < READINGS_PER_DAY; r++) {
-      const seed = hashString(`${loteId}-${fechaStr}-${r}`);
+      const seed = hashString(`${fincaId}-${fechaStr}-${r}`);
 
       const rH = seededRandom(seed);
       const rT = seededRandom(seed + 1);
@@ -95,8 +95,8 @@ function generateReadingsForLote(loteId: string): LecturaSensor[] {
       const sensorIdx = Math.floor(seededRandom(seed + 5) * SENSOR_IDS.length);
 
       readings.push({
-        id: `${loteId}-${fechaStr}-${r}`,
-        loteId,
+        id: `${fincaId}-${fechaStr}-${r}`,
+        fincaId,
         fecha: fechaStr,
         horaRegistro: HOURS[r],
         sensorId: SENSOR_IDS[sensorIdx],
@@ -120,11 +120,11 @@ function generateReadingsForLote(loteId: string): LecturaSensor[] {
 // In-memory cache so we don't regenerate on every call
 const cache: Record<string, LecturaSensor[]> = {};
 
-function getReadings(loteId: string): LecturaSensor[] {
-  if (!cache[loteId]) {
-    cache[loteId] = generateReadingsForLote(loteId);
+function getReadings(fincaId: string): LecturaSensor[] {
+  if (!cache[fincaId]) {
+    cache[fincaId] = generateReadingsForFinca(fincaId);
   }
-  return cache[loteId];
+  return cache[fincaId];
 }
 
 function buildResumen(data: LecturaSensor[]): ResumenSensores {
@@ -169,15 +169,15 @@ function delay(ms = 600): Promise<void> {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 const sensoresService = {
-  async getLecturasByLote(
-    loteId: string,
+  async getLecturasByFinca(
+    fincaId: string,
     filters: SensoresFilters,
     page: number,
     pageSize: number,
   ): Promise<PaginatedSensores> {
     await delay();
 
-    let all = getReadings(loteId);
+    let all = getReadings(fincaId);
 
     // Filter by date range
     if (filters.fechaDesde) {
@@ -190,7 +190,7 @@ const sensoresService = {
       all = all.filter((l) => l.estado === filters.estado);
     }
 
-    const resumen = buildResumen(getReadings(loteId)); // resumen always over full set
+    const resumen = buildResumen(getReadings(fincaId)); // resumen always over full set
 
     const total = all.length;
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -202,10 +202,10 @@ const sensoresService = {
   },
 
   // Simulate a "live" refresh — returns only today's readings
-  async getLatestReadings(loteId: string): Promise<LecturaSensor[]> {
+  async getLatestReadings(fincaId: string): Promise<LecturaSensor[]> {
     await delay(300);
     const today = new Date().toISOString().split('T')[0];
-    return getReadings(loteId).filter((l) => l.fecha === today);
+    return getReadings(fincaId).filter((l) => l.fecha === today);
   },
 };
 

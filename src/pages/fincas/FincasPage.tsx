@@ -6,13 +6,13 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
-import lotesService from '../../services/lotes/lotesService';
+import fincasService from '../../services/fincas/fincasService';
 import type {
-  Lote,
-  LoteFormData,
-  LoteFilters,
+  Finca,
+  FincaFormData,
+  FincaFilters,
   TipoDocumento,
-} from '../../types/lotes.types';
+} from '../../types/fincas.types';
 
 const PAGE_SIZE = 6;
 
@@ -32,7 +32,7 @@ const TIPOS_DOCUMENTO: { value: TipoDocumento; label: string }[] = [
   { value: 'PP', label: 'Pasaporte (PP)' },
 ];
 
-const EMPTY_FORM: LoteFormData = {
+const EMPTY_FORM: FincaFormData = {
   nombre: '',
   descripcion: '',
   area: '',
@@ -53,7 +53,7 @@ const EMPTY_FORM: LoteFormData = {
   },
 };
 
-function validateForm(form: LoteFormData): Partial<Record<string, string>> {
+function validateForm(form: FincaFormData): Partial<Record<string, string>> {
   const errors: Partial<Record<string, string>> = {};
   if (!form.nombre.trim()) errors.nombre = 'El nombre es requerido';
   if (!form.area || isNaN(Number(form.area)) || Number(form.area) <= 0)
@@ -71,25 +71,25 @@ function validateForm(form: LoteFormData): Partial<Record<string, string>> {
   return errors;
 }
 
-function loteToForm(lote: Lote): LoteFormData {
+function fincaToForm(finca: Finca): FincaFormData {
   return {
-    nombre: lote.nombre,
-    descripcion: lote.descripcion ?? '',
-    area: String(lote.area),
+    nombre: finca.nombre,
+    descripcion: finca.descripcion ?? '',
+    area: String(finca.area),
     ubicacion: {
-      departamento: lote.ubicacion.departamento,
-      municipio: lote.ubicacion.municipio,
-      vereda: lote.ubicacion.vereda ?? '',
-      coordenadas: lote.ubicacion.coordenadas ?? '',
-      direccion: lote.ubicacion.direccion ?? '',
+      departamento: finca.ubicacion.departamento,
+      municipio: finca.ubicacion.municipio,
+      vereda: finca.ubicacion.vereda ?? '',
+      coordenadas: finca.ubicacion.coordenadas ?? '',
+      direccion: finca.ubicacion.direccion ?? '',
     },
     dueno: {
-      nombre: lote.dueno.nombre,
-      tipoDocumento: lote.dueno.tipoDocumento,
-      numeroDocumento: lote.dueno.numeroDocumento,
-      email: lote.dueno.email,
-      telefono: lote.dueno.telefono,
-      direccion: lote.dueno.direccion ?? '',
+      nombre: finca.dueno.nombre,
+      tipoDocumento: finca.dueno.tipoDocumento,
+      numeroDocumento: finca.dueno.numeroDocumento,
+      email: finca.dueno.email,
+      telefono: finca.dueno.telefono,
+      direccion: finca.dueno.direccion ?? '',
     },
   };
 }
@@ -97,7 +97,7 @@ function loteToForm(lote: Lote): LoteFormData {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 interface EstadoBadgeProps {
-  estado: Lote['estado'];
+  estado: Finca['estado'];
 }
 function EstadoBadge({ estado }: EstadoBadgeProps) {
   return (
@@ -197,9 +197,9 @@ function Pagination({ page, totalPages, total, pageSize, onPageChange }: Paginat
 // ── Lote Form ─────────────────────────────────────────────────────────────────
 
 interface LoteFormProps {
-  form: LoteFormData;
+  form: FincaFormData;
   errors: Partial<Record<string, string>>;
-  onChange: (form: LoteFormData) => void;
+  onChange: (form: FincaFormData) => void;
 }
 function LoteForm({ form, errors, onChange }: LoteFormProps) {
   const set = (path: string, value: string) => {
@@ -223,13 +223,13 @@ function LoteForm({ form, errors, onChange }: LoteFormProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
           </span>
-          Información del Lote
+          Información de la Finca
         </h3>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Input
               id="nombre"
-              label="Nombre del lote *"
+              label="Nombre de la finca *"
               placeholder="Ej: Hacienda La Esperanza"
               value={form.nombre}
               onChange={(e) => set('nombre', e.target.value)}
@@ -251,7 +251,7 @@ function LoteForm({ form, errors, onChange }: LoteFormProps) {
             <Input
               id="descripcion"
               label="Descripción"
-              placeholder="Descripción breve del lote"
+              placeholder="Descripción breve de la finca"
               value={form.descripcion}
               onChange={(e) => set('descripcion', e.target.value)}
             />
@@ -385,22 +385,22 @@ function LoteForm({ form, errors, onChange }: LoteFormProps) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export function LotesPage() {
-  const [lotes, setLotes] = useState<Lote[]>([]);
+export function FincasPage() {
+  const [fincas, setFincas] = useState<Finca[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState<LoteFilters>({ search: '', estado: 'todos' });
+  const [filters, setFilters] = useState<FincaFilters>({ search: '', estado: 'todos' });
 
   // Modal states
   const [formModal, setFormModal] = useState<'closed' | 'create' | 'edit'>('closed');
-  const [detailModal, setDetailModal] = useState<Lote | null>(null);
-  const [confirmModal, setConfirmModal] = useState<Lote | null>(null);
-  const [editingLote, setEditingLote] = useState<Lote | null>(null);
+  const [detailModal, setDetailModal] = useState<Finca | null>(null);
+  const [confirmModal, setConfirmModal] = useState<Finca | null>(null);
+  const [editingFinca, setEditingFinca] = useState<Finca | null>(null);
 
   // Form state
-  const [form, setForm] = useState<LoteFormData>(EMPTY_FORM);
+  const [form, setForm] = useState<FincaFormData>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Partial<Record<string, string>>>({});
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState('');
@@ -419,8 +419,8 @@ export function LotesPage() {
   const fetchLotes = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await lotesService.getAll(filters, page, PAGE_SIZE);
-      setLotes(result.data);
+      const result = await fincasService.getAll(filters, page, PAGE_SIZE);
+      setFincas(result.data);
       setTotal(result.total);
       setTotalPages(result.totalPages);
       if (result.page !== page) setPage(result.page);
@@ -441,16 +441,16 @@ export function LotesPage() {
   // ── Form handlers ─────────────────────────────────────────────────────────
 
   const openCreate = () => {
-    setEditingLote(null);
+    setEditingFinca(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
     setFormError('');
     setFormModal('create');
   };
 
-  const openEdit = (lote: Lote) => {
-    setEditingLote(lote);
-    setForm(loteToForm(lote));
+  const openEdit = (finca: Finca) => {
+    setEditingFinca(lote);
+    setForm(fincaToForm(finca));
     setFormErrors({});
     setFormError('');
     setFormModal('edit');
@@ -458,7 +458,7 @@ export function LotesPage() {
 
   const closeFormModal = () => {
     setFormModal('closed');
-    setEditingLote(null);
+    setEditingFinca(null);
   };
 
   const handleFormSubmit = async () => {
@@ -472,11 +472,11 @@ export function LotesPage() {
     setFormLoading(true);
     try {
       if (formModal === 'create') {
-        await lotesService.create(form);
-        showToast('Lote creado exitosamente');
-      } else if (editingLote) {
-        await lotesService.update(editingLote.id, form);
-        showToast('Lote actualizado exitosamente');
+        await fincasService.create(form);
+        showToast('Finca creada exitosamente');
+      } else if (editingFinca) {
+        await fincasService.update(editingFinca.id, form);
+        showToast('Finca actualizada exitosamente');
       }
       closeFormModal();
       fetchLotes();
@@ -489,16 +489,16 @@ export function LotesPage() {
 
   // ── Toggle estado ─────────────────────────────────────────────────────────
 
-  const handleToggleEstado = async (lote: Lote) => {
+  const handleToggleEstado = async (finca: Finca) => {
     setConfirmModal(null);
-    setTogglingId(lote.id);
+    setTogglingId(finca.id);
     try {
-      await lotesService.toggleEstado(lote.id);
-      const action = lote.estado === 'activo' ? 'inactivado' : 'activado';
-      showToast(`Lote ${action} exitosamente`);
+      await fincasService.toggleEstado(finca.id);
+      const action = finca.estado === 'activo' ? 'inactivada' : 'activada';
+      showToast(`Finca ${action} exitosamente`);
       fetchLotes();
     } catch {
-      showToast('No se pudo cambiar el estado del lote', 'error');
+      showToast('No se pudo cambiar el estado de la finca', 'error');
     } finally {
       setTogglingId(null);
     }
@@ -507,7 +507,7 @@ export function LotesPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <DashboardLayout pageTitle="Gestión de Lotes">
+    <DashboardLayout pageTitle="Gestión de Fincas">
       <div className="space-y-5 max-w-7xl mx-auto">
 
         {/* Toast */}
@@ -534,25 +534,25 @@ export function LotesPage() {
         {/* Header */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestión de Lotes</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gestión de Fincas</h1>
             <p className="mt-0.5 text-sm text-slate-500">
-              Administra los lotes, sus ubicaciones y propietarios
+              Administra las fincas, sus ubicaciones y propietarios
             </p>
           </div>
           <Button onClick={openCreate} size="md">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Nuevo lote
+            Nueva finca
           </Button>
         </div>
 
         {/* Stats strip */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Total lotes', value: total, icon: '🗺️', color: 'bg-forest-50 text-forest-700' },
-            { label: 'Activos', value: lotes.filter((l) => l.estado === 'activo').length, icon: '✅', color: 'bg-emerald-50 text-emerald-700' },
-            { label: 'Inactivos', value: lotes.filter((l) => l.estado === 'inactivo').length, icon: '⏸️', color: 'bg-slate-100 text-slate-600' },
+            { label: 'Total fincas', value: total, icon: '🗺️', color: 'bg-forest-50 text-forest-700' },
+            { label: 'Activos', value: fincas.filter((l) => l.estado === 'activo').length, icon: '✅', color: 'bg-emerald-50 text-emerald-700' },
+            { label: 'Inactivos', value: fincas.filter((l) => l.estado === 'inactivo').length, icon: '⏸️', color: 'bg-slate-100 text-slate-600' },
           ].map((s) => (
             <div key={s.label} className={`rounded-xl border border-slate-100 bg-white p-3 sm:p-4 shadow-sm flex items-center gap-3`}>
               <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base ${s.color}`}>{s.icon}</span>
@@ -584,7 +584,7 @@ export function LotesPage() {
               id="filter-estado"
               value={filters.estado}
               onChange={(e) =>
-                setFilters((f) => ({ ...f, estado: e.target.value as LoteFilters['estado'] }))
+                setFilters((f) => ({ ...f, estado: e.target.value as FincaFilters['estado'] }))
               }
               options={[
                 { value: 'todos', label: 'Todos los estados' },
@@ -601,7 +601,7 @@ export function LotesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Lote</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Finca</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 hidden md:table-cell">Ubicación</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 hidden lg:table-cell">Dueño</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 hidden sm:table-cell">Área (ha)</th>
@@ -624,53 +624,53 @@ export function LotesPage() {
                       <td className="px-4 py-3.5"><div className="h-7 w-20 rounded bg-slate-100 ml-auto" /></td>
                     </tr>
                   ))
-                ) : lotes.length === 0 ? (
+                ) : fincas.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <span className="text-4xl">🌿</span>
-                        <p className="text-sm font-medium text-slate-600">No se encontraron lotes</p>
-                        <p className="text-xs text-slate-400">Prueba con otros filtros o crea un nuevo lote</p>
+                        <p className="text-sm font-medium text-slate-600">No se encontraron fincas</p>
+                        <p className="text-xs text-slate-400">Prueba con otros filtros o crea una nueva finca</p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  lotes.map((lote) => (
+                  fincas.map((finca) => (
                     <tr
-                      key={lote.id}
+                      key={finca.id}
                       className="hover:bg-slate-50/60 transition-colors group"
                     >
                       <td className="px-4 py-3.5">
-                        <p className="font-medium text-slate-900 leading-tight">{lote.nombre}</p>
-                        {lote.descripcion && (
-                          <p className="mt-0.5 text-xs text-slate-400 truncate max-w-[180px]">{lote.descripcion}</p>
+                        <p className="font-medium text-slate-900 leading-tight">{finca.nombre}</p>
+                        {finca.descripcion && (
+                          <p className="mt-0.5 text-xs text-slate-400 truncate max-w-[180px]">{finca.descripcion}</p>
                         )}
                         <p className="mt-0.5 text-[10px] text-slate-300 md:hidden">
-                          {lote.ubicacion.municipio}, {lote.ubicacion.departamento}
+                          {finca.ubicacion.municipio}, {finca.ubicacion.departamento}
                         </p>
                       </td>
                       <td className="px-4 py-3.5 hidden md:table-cell">
                         <p className="text-slate-700 leading-tight">
-                          {lote.ubicacion.municipio}
+                          {finca.ubicacion.municipio}
                         </p>
-                        <p className="text-xs text-slate-400">{lote.ubicacion.departamento}</p>
+                        <p className="text-xs text-slate-400">{finca.ubicacion.departamento}</p>
                       </td>
                       <td className="px-4 py-3.5 hidden lg:table-cell">
                         <p className="text-slate-700 leading-tight truncate max-w-[160px]">
-                          {lote.dueno.nombre}
+                          {finca.dueno.nombre}
                         </p>
-                        <p className="text-xs text-slate-400">{lote.dueno.telefono}</p>
+                        <p className="text-xs text-slate-400">{finca.dueno.telefono}</p>
                       </td>
                       <td className="px-4 py-3.5 text-right hidden sm:table-cell">
-                        <span className="font-semibold text-slate-800">{lote.area.toLocaleString('es-CO')}</span>
+                        <span className="font-semibold text-slate-800">{finca.area.toLocaleString('es-CO')}</span>
                       </td>
                       <td className="px-4 py-3.5 text-center">
-                        <EstadoBadge estado={lote.estado} />
+                        <EstadoBadge estado={finca.estado} />
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-1">
                           <Link
-                            to={`/dashboard/lotes/${lote.id}/sensores`}
+                            to={`/dashboard/fincas/${finca.id}/sensores`}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                             title="Ver sensores"
                           >
@@ -679,7 +679,7 @@ export function LotesPage() {
                             </svg>
                           </Link>
                           <button
-                            onClick={() => setDetailModal(lote)}
+                            onClick={() => setDetailModal(finca)}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-forest-50 hover:text-forest-600 transition-colors"
                             title="Ver detalle"
                           >
@@ -689,7 +689,7 @@ export function LotesPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => openEdit(lote)}
+                            onClick={() => openEdit(finca)}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-earth-50 hover:text-earth-600 transition-colors"
                             title="Editar"
                           >
@@ -698,23 +698,23 @@ export function LotesPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => setConfirmModal(lote)}
-                            disabled={togglingId === lote.id}
+                            onClick={() => setConfirmModal(finca)}
+                            disabled={togglingId === finca.id}
                             className={[
                               'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
-                              lote.estado === 'activo'
+                              finca.estado === 'activo'
                                 ? 'text-slate-400 hover:bg-red-50 hover:text-red-500'
                                 : 'text-slate-400 hover:bg-forest-50 hover:text-forest-600',
-                              togglingId === lote.id ? 'opacity-50 cursor-not-allowed' : '',
+                              togglingId === finca.id ? 'opacity-50 cursor-not-allowed' : '',
                             ].join(' ')}
-                            title={lote.estado === 'activo' ? 'Inactivar' : 'Activar'}
+                            title={finca.estado === 'activo' ? 'Inactivar' : 'Activar'}
                           >
-                            {togglingId === lote.id ? (
+                            {togglingId === finca.id ? (
                               <svg className="h-3.5 w-3.5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                               </svg>
-                            ) : lote.estado === 'activo' ? (
+                            ) : finca.estado === 'activo' ? (
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                               </svg>
@@ -734,7 +734,7 @@ export function LotesPage() {
           </div>
 
           {/* Pagination */}
-          {!loading && lotes.length > 0 && (
+          {!loading && fincas.length > 0 && (
             <div className="border-t border-slate-100 px-4 py-3">
               <Pagination
                 page={page}
@@ -752,7 +752,7 @@ export function LotesPage() {
       <Modal
         open={formModal !== 'closed'}
         onClose={closeFormModal}
-        title={formModal === 'create' ? 'Nuevo lote' : `Editar lote — ${editingLote?.nombre}`}
+        title={formModal === 'create' ? 'Nueva finca' : `Editar finca — ${editingFinca?.nombre}`}
         size="xl"
         footer={
           <>
@@ -760,7 +760,7 @@ export function LotesPage() {
               Cancelar
             </Button>
             <Button onClick={handleFormSubmit} isLoading={formLoading}>
-              {formModal === 'create' ? 'Crear lote' : 'Guardar cambios'}
+              {formModal === 'create' ? 'Crear finca' : 'Guardar cambios'}
             </Button>
           </>
         }
@@ -777,7 +777,7 @@ export function LotesPage() {
       <Modal
         open={!!detailModal}
         onClose={() => setDetailModal(null)}
-        title="Detalle del lote"
+        title="Detalle de la finca"
         size="lg"
         footer={
           <>
@@ -791,7 +791,7 @@ export function LotesPage() {
                   setDetailModal(null);
                 }}
               >
-                Editar lote
+                Editar finca
               </Button>
             )}
           </>
@@ -812,7 +812,7 @@ export function LotesPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Lote info */}
               <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-forest-600">Lote</p>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-forest-600">Finca</p>
                 <dl className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <dt className="text-xs text-slate-500">Área</dt>
@@ -899,7 +899,7 @@ export function LotesPage() {
       <Modal
         open={!!confirmModal}
         onClose={() => setConfirmModal(null)}
-        title={confirmModal?.estado === 'activo' ? 'Inactivar lote' : 'Activar lote'}
+        title={confirmModal?.estado === 'activo' ? 'Inactivar finca' : 'Activar finca'}
         size="sm"
         footer={
           <>
@@ -920,13 +920,13 @@ export function LotesPage() {
             <p className="text-sm text-slate-600">
               {confirmModal.estado === 'activo' ? (
                 <>
-                  ¿Estás seguro que deseas <span className="font-semibold text-red-600">inactivar</span> el lote{' '}
+                  ¿Estás seguro que deseas <span className="font-semibold text-red-600">inactivar</span> la finca{' '}
                   <span className="font-semibold text-slate-900">"{confirmModal.nombre}"</span>?
-                  El lote dejará de estar disponible en operaciones activas.
+                  La finca dejará de estar disponible en operaciones activas.
                 </>
               ) : (
                 <>
-                  ¿Estás seguro que deseas <span className="font-semibold text-forest-600">activar</span> el lote{' '}
+                  ¿Estás seguro que deseas <span className="font-semibold text-forest-600">activar</span> la finca{' '}
                   <span className="font-semibold text-slate-900">"{confirmModal.nombre}"</span>?
                 </>
               )}

@@ -1,5 +1,5 @@
 export type TipoDocumento = 'CC' | 'NIT' | 'CE' | 'PP';
-export type EstadoLote = 'activo' | 'inactivo';
+export type EstadoFinca = 'activo' | 'inactivo';
 
 export interface Ubicacion {
   departamento: string;
@@ -18,18 +18,18 @@ export interface Dueno {
   direccion?: string;
 }
 
-export interface Lote {
+export interface Finca {
   id: string;
   nombre: string;
   descripcion?: string;
   area: number;
   ubicacion: Ubicacion;
   dueno: Dueno;
-  estado: EstadoLote;
+  estado: EstadoFinca;
   fechaRegistro: string;
 }
 
-export interface LoteFormData {
+export interface FincaFormData {
   nombre: string;
   descripcion: string;
   area: string;
@@ -50,9 +50,9 @@ export interface LoteFormData {
   };
 }
 
-export interface LoteFilters {
+export interface FincaFilters {
   search: string;
-  estado: EstadoLote | 'todos';
+  estado: EstadoFinca | 'todos';
 }
 
 export interface PaginatedResult<T> {

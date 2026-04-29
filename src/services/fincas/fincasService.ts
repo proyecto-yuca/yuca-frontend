@@ -1,9 +1,9 @@
-import type { Lote, LoteFormData, LoteFilters, PaginatedResult } from '../../types/lotes.types';
+import type { Finca, FincaFormData, FincaFilters, PaginatedResult } from '../../types/fincas.types';
 
-const mockLotes: Lote[] = [
+const mockFincas: Finca[] = [
   {
     id: '1',
-    nombre: 'Lote El Paraíso',
+    nombre: 'Finca El Paraíso',
     descripcion: 'Terreno con buena irrigación natural, apto para cultivos de yuca y maíz.',
     area: 12.5,
     ubicacion: {
@@ -50,7 +50,7 @@ const mockLotes: Lote[] = [
   {
     id: '3',
     nombre: 'Finca Los Cedros',
-    descripcion: 'Lote con suelo arcilloso, ideal para tubérculos.',
+    descripcion: 'Finca con suelo arcilloso, ideal para tubérculos.',
     area: 7.8,
     ubicacion: {
       departamento: 'Boyacá',
@@ -116,7 +116,7 @@ const mockLotes: Lote[] = [
   },
   {
     id: '6',
-    nombre: 'Lote San Isidro',
+    nombre: 'Finca San Isidro',
     descripcion: 'Lote en zona de ladera con cultivos escalonados.',
     area: 9.1,
     ubicacion: {
@@ -181,8 +181,8 @@ const mockLotes: Lote[] = [
   },
 ];
 
-let data: Lote[] = [...mockLotes];
-let nextId = mockLotes.length + 1;
+let data: Finca[] = [...mockFincas];
+let nextId = mockFincas.length + 1;
 
 function simulateDelay(ms = 350): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -192,12 +192,12 @@ function generateId(): string {
   return String(nextId++);
 }
 
-const lotesService = {
+const fincasService = {
   async getAll(
-    filters: LoteFilters,
+    filters: FincaFilters,
     page: number,
     pageSize: number,
-  ): Promise<PaginatedResult<Lote>> {
+  ): Promise<PaginatedResult<Finca>> {
     await simulateDelay();
 
     let filtered = data.filter((lote) => {
@@ -223,14 +223,14 @@ const lotesService = {
     return { data: paged, total, page: safePage, pageSize, totalPages };
   },
 
-  async getById(id: string): Promise<Lote | null> {
+  async getById(id: string): Promise<Finca | null> {
     await simulateDelay(150);
     return data.find((l) => l.id === id) ?? null;
   },
 
-  async create(formData: LoteFormData): Promise<Lote> {
+  async create(formData: FincaFormData): Promise<Finca> {
     await simulateDelay();
-    const newLote: Lote = {
+    const newFinca: Finca = {
       id: generateId(),
       nombre: formData.nombre,
       descripcion: formData.descripcion || undefined,
@@ -253,16 +253,16 @@ const lotesService = {
       estado: 'activo',
       fechaRegistro: new Date().toISOString().split('T')[0],
     };
-    data = [newLote, ...data];
-    return newLote;
+    data = [newFinca, ...data];
+    return newFinca;
   },
 
-  async update(id: string, formData: LoteFormData): Promise<Lote> {
+  async update(id: string, formData: FincaFormData): Promise<Finca> {
     await simulateDelay();
     const index = data.findIndex((l) => l.id === id);
-    if (index === -1) throw new Error('Lote no encontrado');
+    if (index === -1) throw new Error('Finca no encontrada');
 
-    const updated: Lote = {
+    const updated: Finca = {
       ...data[index],
       nombre: formData.nombre,
       descripcion: formData.descripcion || undefined,
@@ -288,12 +288,12 @@ const lotesService = {
     return updated;
   },
 
-  async toggleEstado(id: string): Promise<Lote> {
+  async toggleEstado(id: string): Promise<Finca> {
     await simulateDelay(200);
     const index = data.findIndex((l) => l.id === id);
-    if (index === -1) throw new Error('Lote no encontrado');
+    if (index === -1) throw new Error('Finca no encontrada');
 
-    const updated: Lote = {
+    const updated: Finca = {
       ...data[index],
       estado: data[index].estado === 'activo' ? 'inactivo' : 'activo',
     };
@@ -302,4 +302,4 @@ const lotesService = {
   },
 };
 
-export default lotesService;
+export default fincasService;

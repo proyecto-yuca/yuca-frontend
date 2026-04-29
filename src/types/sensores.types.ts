@@ -2,7 +2,7 @@ export type EstadoLectura = 'normal' | 'alerta' | 'critico';
 
 export interface LecturaSensor {
   id: string;
-  loteId: string;
+  fincaId: string;
   fecha: string;         // YYYY-MM-DD
   horaRegistro: string;  // HH:MM (UTC-5)
   sensorId: string;

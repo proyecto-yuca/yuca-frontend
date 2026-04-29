@@ -5,9 +5,9 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import sensoresService from '../../services/sensores/sensoresService';
-import lotesService from '../../services/lotes/lotesService';
+import fincasService from '../../services/fincas/fincasService';
 import type { LecturaSensor, SensoresFilters, ResumenSensores } from '../../types/sensores.types';
-import type { Lote } from '../../types/lotes.types';
+import type { Finca } from '../../types/fincas.types';
 
 const PAGE_SIZE = 10;
 
@@ -198,10 +198,10 @@ function Pagination({ page, totalPages, total, pageSize, onPageChange }: Paginat
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export function LoteSensoresPage() {
-  const { loteId } = useParams<{ loteId: string }>();
+export function FincaSensoresPage() {
+  const { fincaId } = useParams<{ fincaId: string }>();
 
-  const [lote, setLote] = useState<Lote | null>(null);
+  const [finca, setFinca] = useState<Lote | null>(null);
   const [lecturas, setLecturas] = useState<LecturaSensor[]>([]);
   const [resumen, setResumen] = useState<ResumenSensores | null>(null);
   const [total, setTotal] = useState(0);
@@ -221,20 +221,20 @@ export function LoteSensoresPage() {
   // Auto-refresh interval ref
   const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load lote info once
+  // Load finca info once
   useEffect(() => {
-    if (!loteId) return;
-    lotesService.getById(loteId).then(setLote).catch(() => {});
-  }, [loteId]);
+    if (!fincaId) return;
+    fincasService.getById(fincaId).then(setLote).catch(() => {});
+  }, [fincaId]);
 
   const fetchData = useCallback(
     async (isRefresh = false) => {
-      if (!loteId) return;
+      if (!fincaId) return;
       if (isRefresh) setRefreshing(true);
       else setLoading(true);
 
       try {
-        const result = await sensoresService.getLecturasByLote(loteId, filters, page, PAGE_SIZE);
+        const result = await sensoresService.getLecturasByFinca(fincaId, filters, page, PAGE_SIZE);
         setLecturas(result.data);
         setTotal(result.total);
         setTotalPages(result.totalPages);
@@ -246,7 +246,7 @@ export function LoteSensoresPage() {
         setRefreshing(false);
       }
     },
-    [loteId, filters, page],
+    [fincaId, filters, page],
   );
 
   useEffect(() => {
@@ -279,7 +279,7 @@ export function LoteSensoresPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <DashboardLayout pageTitle={`Sensores — ${lote?.nombre ?? '…'}`}>
+    <DashboardLayout pageTitle={`Sensores — ${finca?.nombre ?? '…'}`}>
       <div className="space-y-5 max-w-7xl mx-auto">
 
         {/* Breadcrumb */}
@@ -288,12 +288,12 @@ export function LoteSensoresPage() {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
-          <Link to="/dashboard/lotes" className="hover:text-forest-600 transition-colors">Lotes</Link>
+          <Link to="/dashboard/fincas" className="hover:text-forest-600 transition-colors">Lotes</Link>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
           <span className="text-slate-700 font-medium truncate max-w-[200px]">
-            {lote?.nombre ?? 'Cargando…'}
+            {finca?.nombre ?? 'Cargando…'}
           </span>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -312,11 +312,11 @@ export function LoteSensoresPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-slate-900">
-                  Sensores — {lote ? lote.nombre : <span className="inline-block h-5 w-40 animate-pulse rounded bg-slate-200 align-middle" />}
+                  Sensores — {finca ? finca.nombre : <span className="inline-block h-5 w-40 animate-pulse rounded bg-slate-200 align-middle" />}
                 </h1>
                 <p className="text-sm text-slate-500">
-                  {lote
-                    ? `${lote.ubicacion.municipio}, ${lote.ubicacion.departamento} · ${lote.area} ha`
+                  {finca
+                    ? `${finca.ubicacion.municipio}, ${finca.ubicacion.departamento} · ${finca.area} ha`
                     : ''}
                 </p>
               </div>

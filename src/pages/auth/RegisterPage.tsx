@@ -50,7 +50,7 @@ export function RegisterPage() {
     setIsLoading(true);
     try {
       const response = await authService.register(form);
-      signIn(response.token, response.user);
+      signIn(response.token, response.user, response.permisos);
       navigate('/dashboard');
     } catch (err) {
       setServerError(err instanceof Error ? err.message : 'Error al registrarse.');

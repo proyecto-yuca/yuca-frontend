@@ -11,6 +11,7 @@ import { FincaSensoresPage } from '../pages/fincas/FincaSensoresPage';
 import { CultivosPage } from '../pages/cultivos/CultivosPage';
 import { VariablesPage } from '../pages/variables/VariablesPage';
 import { SensoresPage } from '../pages/sensores/SensoresPage';
+import { PermisosPage } from '../pages/permisos/PermisosPage';
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
       { path: '/dashboard/cultivos', element: <CultivosPage /> },
       { path: '/dashboard/variables', element: <VariablesPage /> },
       { path: '/dashboard/sensores', element: <SensoresPage /> },
+      { path: '/dashboard/permisos', element: <PermisosPage /> },
     ],
   },
   {

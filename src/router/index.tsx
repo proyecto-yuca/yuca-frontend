@@ -8,6 +8,7 @@ import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { FincasPage } from '../pages/fincas/FincasPage';
 import { FincaSensoresPage } from '../pages/fincas/FincaSensoresPage';
+import { CultivosPage } from '../pages/cultivos/CultivosPage';
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/dashboard/fincas', element: <FincasPage /> },
       { path: '/dashboard/fincas/:fincaId/sensores', element: <FincaSensoresPage /> },
+      { path: '/dashboard/cultivos', element: <CultivosPage /> },
     ],
   },
   {

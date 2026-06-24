@@ -8,6 +8,7 @@ interface NavItem {
   label: string;
   to: string;
   icon: ReactNode;
+  matchPrefix?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -26,6 +27,16 @@ const navItems: NavItem[] = [
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Cultivos',
+    to: '/dashboard/cultivos',
+    matchPrefix: true,
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V9m0 0c0-4 3-6 6-6-1 3.5-3.5 6-6 6zm0 0C12 5 9 3 6 3c1 3.5 3.5 6 6 6z" />
       </svg>
     ),
   },
@@ -67,7 +78,9 @@ function SidebarContent({ onClose }: SidebarContentProps) {
           General
         </p>
         {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
+          const isActive = item.matchPrefix
+            ? location.pathname.startsWith(item.to)
+            : location.pathname === item.to;
           return (
             <Link
               key={item.to}

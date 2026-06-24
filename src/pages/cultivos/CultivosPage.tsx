@@ -233,6 +233,7 @@ export function CultivosPage() {
 
   const [form, setForm] = useState<CultivoFormData>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -286,12 +287,14 @@ export function CultivosPage() {
   const openCreate = () => {
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setModalError(null);
     setCreateOpen(true);
   };
 
   const openEdit = (cultivo: Cultivo) => {
     setForm(cultivoToForm(cultivo));
     setFormErrors({});
+    setModalError(null);
     setEditTarget(cultivo);
   };
 
@@ -299,12 +302,19 @@ export function CultivosPage() {
     setCreateOpen(false);
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setModalError(null);
   };
 
   const closeEdit = () => {
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setModalError(null);
+  };
+
+  const closeDelete = () => {
+    setDeleteTarget(null);
+    setModalError(null);
   };
 
   const addPoint = () => {
@@ -336,7 +346,7 @@ export function CultivosPage() {
       Object.entries(err.fieldErrors).forEach(([key, msgs]) => { mapped[key] = msgs[0]; });
       setFormErrors(mapped);
     } else {
-      showToast('error', isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
+      setModalError(isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
     }
   };
 
@@ -380,10 +390,10 @@ export function CultivosPage() {
     try {
       await cultivosService.delete(selectedFinca.id, deleteTarget.id);
       setCultivos(prev => prev.filter(c => c.id !== deleteTarget.id));
-      setDeleteTarget(null);
+      closeDelete();
       showToast('success', 'Cultivo eliminado.');
     } catch (err) {
-      showToast('error', isApiError(err) ? err.message : 'Error al eliminar el cultivo.');
+      setModalError(isApiError(err) ? err.message : 'Error al eliminar el cultivo.');
     } finally {
       setDeleting(false);
     }
@@ -393,6 +403,7 @@ export function CultivosPage() {
 
   const renderForm = () => (
     <div className="space-y-4">
+      {modalError && <Alert variant="error">{modalError}</Alert>}
       <Input
         label="Nombre *"
         value={form.nombre}
@@ -674,21 +685,24 @@ export function CultivosPage() {
         {/* Delete confirmation modal */}
         <Modal
           open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
+          onClose={closeDelete}
           title="Eliminar cultivo"
           size="sm"
           footer={
             <div className="flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancelar</Button>
+              <Button variant="ghost" onClick={closeDelete} disabled={deleting}>Cancelar</Button>
               <Button variant="danger" onClick={handleDelete} isLoading={deleting}>Eliminar</Button>
             </div>
           }
         >
-          <p className="text-sm text-slate-600">
-            ¿Estás seguro de que deseas eliminar el cultivo{' '}
-            <span className="font-semibold text-slate-900">"{deleteTarget?.nombre}"</span>?
-            Esta acción no se puede deshacer.
-          </p>
+          <div className="space-y-3">
+            {modalError && <Alert variant="error">{modalError}</Alert>}
+            <p className="text-sm text-slate-600">
+              ¿Estás seguro de que deseas eliminar el cultivo{' '}
+              <span className="font-semibold text-slate-900">"{deleteTarget?.nombre}"</span>?
+              Esta acción no se puede deshacer.
+            </p>
+          </div>
         </Modal>
       </div>
     </DashboardLayout>

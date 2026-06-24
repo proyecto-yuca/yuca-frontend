@@ -91,6 +91,7 @@ export function VariablesPage() {
 
   const [form, setForm] = useState<VariableFormData>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -133,12 +134,14 @@ export function VariablesPage() {
   const openCreate = () => {
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setModalError(null);
     setCreateOpen(true);
   };
 
   const openEdit = (variable: Variable) => {
     setForm(variableToForm(variable));
     setFormErrors({});
+    setModalError(null);
     setEditTarget(variable);
   };
 
@@ -146,12 +149,19 @@ export function VariablesPage() {
     setCreateOpen(false);
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setModalError(null);
   };
 
   const closeEdit = () => {
     setEditTarget(null);
     setForm(EMPTY_FORM);
     setFormErrors({});
+    setModalError(null);
+  };
+
+  const closeDelete = () => {
+    setDeleteTarget(null);
+    setModalError(null);
   };
 
   // ── Submit handlers ─────────────────────────────────────────────────────────
@@ -162,7 +172,7 @@ export function VariablesPage() {
       Object.entries(err.fieldErrors).forEach(([key, msgs]) => { mapped[key] = msgs[0]; });
       setFormErrors(mapped);
     } else {
-      showToast('error', isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
+      setModalError(isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
     }
   };
 
@@ -205,10 +215,10 @@ export function VariablesPage() {
     try {
       await variablesService.delete(deleteTarget.id);
       setVariables(prev => prev.filter(v => v.id !== deleteTarget.id));
-      setDeleteTarget(null);
+      closeDelete();
       showToast('success', 'Variable eliminada.');
     } catch (err) {
-      showToast('error', isApiError(err) ? err.message : 'Error al eliminar la variable.');
+      setModalError(isApiError(err) ? err.message : 'Error al eliminar la variable.');
     } finally {
       setDeleting(false);
     }
@@ -218,6 +228,7 @@ export function VariablesPage() {
 
   const renderForm = () => (
     <div className="space-y-4">
+      {modalError && <Alert variant="error">{modalError}</Alert>}
       <Input
         label="Nombre *"
         value={form.nombre}
@@ -420,21 +431,24 @@ export function VariablesPage() {
         {/* Delete confirmation modal */}
         <Modal
           open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
+          onClose={closeDelete}
           title="Eliminar variable"
           size="sm"
           footer={
             <div className="flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancelar</Button>
+              <Button variant="ghost" onClick={closeDelete} disabled={deleting}>Cancelar</Button>
               <Button variant="danger" onClick={handleDelete} isLoading={deleting}>Eliminar</Button>
             </div>
           }
         >
-          <p className="text-sm text-slate-600">
-            ¿Estás seguro de que deseas eliminar la variable{' '}
-            <span className="font-semibold text-slate-900">"{deleteTarget?.nombre}"</span>?
-            Esta acción no se puede deshacer.
-          </p>
+          <div className="space-y-3">
+            {modalError && <Alert variant="error">{modalError}</Alert>}
+            <p className="text-sm text-slate-600">
+              ¿Estás seguro de que deseas eliminar la variable{' '}
+              <span className="font-semibold text-slate-900">"{deleteTarget?.nombre}"</span>?
+              Esta acción no se puede deshacer.
+            </p>
+          </div>
         </Modal>
       </div>
     </DashboardLayout>

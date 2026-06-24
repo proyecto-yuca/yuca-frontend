@@ -12,6 +12,7 @@ import { CultivosPage } from '../pages/cultivos/CultivosPage';
 import { VariablesPage } from '../pages/variables/VariablesPage';
 import { SensoresPage } from '../pages/sensores/SensoresPage';
 import { PermisosPage } from '../pages/permisos/PermisosPage';
+import { UsuariosPage } from '../pages/usuarios/UsuariosPage';
 
 export const router = createBrowserRouter([
   {
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: '/dashboard/variables', element: <VariablesPage /> },
       { path: '/dashboard/sensores', element: <SensoresPage /> },
       { path: '/dashboard/permisos', element: <PermisosPage /> },
+      { path: '/dashboard/usuarios', element: <UsuariosPage /> },
     ],
   },
   {

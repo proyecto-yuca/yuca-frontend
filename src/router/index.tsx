@@ -10,6 +10,7 @@ import { FincasPage } from '../pages/fincas/FincasPage';
 import { FincaSensoresPage } from '../pages/fincas/FincaSensoresPage';
 import { CultivosPage } from '../pages/cultivos/CultivosPage';
 import { VariablesPage } from '../pages/variables/VariablesPage';
+import { SensoresPage } from '../pages/sensores/SensoresPage';
 
 export const router = createBrowserRouter([
   {
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
       { path: '/dashboard/fincas/:fincaId/sensores', element: <FincaSensoresPage /> },
       { path: '/dashboard/cultivos', element: <CultivosPage /> },
       { path: '/dashboard/variables', element: <VariablesPage /> },
+      { path: '/dashboard/sensores', element: <SensoresPage /> },
     ],
   },
   {

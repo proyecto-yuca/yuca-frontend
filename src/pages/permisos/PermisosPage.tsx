@@ -67,6 +67,7 @@ export function PermisosPage() {
   const [deleteTarget, setDeleteTarget] = useState<Rol | null>(null);
   const [form, setForm] = useState<RolFormData>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -142,15 +143,18 @@ export function PermisosPage() {
 
   // ── Roles handlers ──────────────────────────────────────────────────────────
 
-  const openCreate = () => { setForm(EMPTY_FORM); setFormErrors({}); setCreateOpen(true); };
-  const closeCreate = () => { setCreateOpen(false); setForm(EMPTY_FORM); setFormErrors({}); };
+  const openCreate = () => { setForm(EMPTY_FORM); setFormErrors({}); setModalError(null); setCreateOpen(true); };
+  const closeCreate = () => { setCreateOpen(false); setForm(EMPTY_FORM); setFormErrors({}); setModalError(null); };
 
   const openEdit = (rol: Rol) => {
     setForm({ identificador: rol.identificador, nombre: rol.nombre, descripcion: rol.descripcion ?? '' });
     setFormErrors({});
+    setModalError(null);
     setEditTarget(rol);
   };
-  const closeEdit = () => { setEditTarget(null); setForm(EMPTY_FORM); setFormErrors({}); };
+  const closeEdit = () => { setEditTarget(null); setForm(EMPTY_FORM); setFormErrors({}); setModalError(null); };
+
+  const closeDelete = () => { setDeleteTarget(null); setModalError(null); };
 
   const applyApiErrors = (err: unknown) => {
     if (isApiError(err) && err.fieldErrors) {
@@ -158,7 +162,7 @@ export function PermisosPage() {
       Object.entries(err.fieldErrors).forEach(([key, msgs]) => { mapped[key] = msgs[0]; });
       setFormErrors(mapped);
     } else {
-      showToast('error', isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
+      setModalError(isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
     }
   };
 
@@ -201,11 +205,10 @@ export function PermisosPage() {
     try {
       await rolesService.delete(deleteTarget.id);
       setRoles(prev => prev.filter(r => r.id !== deleteTarget.id));
-      setDeleteTarget(null);
+      closeDelete();
       showToast('success', 'Rol eliminado.');
     } catch (err) {
-      showToast('error', isApiError(err) ? err.message : 'No se puede eliminar este rol.');
-      setDeleteTarget(null);
+      setModalError(isApiError(err) ? err.message : 'No se puede eliminar este rol.');
     } finally {
       setDeleting(false);
     }
@@ -261,6 +264,7 @@ export function PermisosPage() {
 
   const renderCreateForm = () => (
     <div className="space-y-4">
+      {modalError && <Alert variant="error">{modalError}</Alert>}
       <Input
         label="Identificador *"
         value={form.identificador}
@@ -286,6 +290,7 @@ export function PermisosPage() {
 
   const renderEditForm = () => (
     <div className="space-y-4">
+      {modalError && <Alert variant="error">{modalError}</Alert>}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-slate-700">Identificador</label>
         <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono text-slate-500">
@@ -595,25 +600,28 @@ export function PermisosPage() {
         {/* Delete modal */}
         <Modal
           open={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
+          onClose={closeDelete}
           title="Eliminar tipo de usuario"
           size="sm"
           footer={
             <div className="flex items-center justify-end gap-3">
-              <Button variant="ghost" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancelar</Button>
+              <Button variant="ghost" onClick={closeDelete} disabled={deleting}>Cancelar</Button>
               <Button variant="danger" onClick={handleDelete} isLoading={deleting}>Eliminar</Button>
             </div>
           }
         >
-          <p className="text-sm text-slate-600">
-            ¿Estás seguro de que deseas eliminar el rol{' '}
-            <span className="font-semibold text-slate-900">"{deleteTarget?.nombre}"</span>?
-            {deleteTarget?.sistema && (
-              <span className="mt-2 block rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-                Este es un rol de sistema y es posible que no pueda eliminarse.
-              </span>
-            )}
-          </p>
+          <div className="space-y-3">
+            {modalError && <Alert variant="error">{modalError}</Alert>}
+            <p className="text-sm text-slate-600">
+              ¿Estás seguro de que deseas eliminar el rol{' '}
+              <span className="font-semibold text-slate-900">"{deleteTarget?.nombre}"</span>?
+              {deleteTarget?.sistema && (
+                <span className="mt-2 block rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  Este es un rol de sistema y es posible que no pueda eliminarse.
+                </span>
+              )}
+            </p>
+          </div>
         </Modal>
       </div>
     </DashboardLayout>

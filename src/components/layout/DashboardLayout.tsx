@@ -9,12 +9,14 @@ interface NavItem {
   to: string;
   icon: ReactNode;
   matchPrefix?: boolean;
+  modulo?: string; // identificador del módulo para control de permisos
 }
 
 const navItems: NavItem[] = [
   {
     label: 'Inicio',
     to: '/dashboard',
+    modulo: 'inicio',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -22,9 +24,21 @@ const navItems: NavItem[] = [
     ),
   },
   {
+    label: 'Permisos',
+    to: '/dashboard/permisos',
+    matchPrefix: true,
+    modulo: 'permisos',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    ),
+  },
+  {
     label: 'Variables',
     to: '/dashboard/variables',
     matchPrefix: true,
+    modulo: 'variables',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -34,6 +48,7 @@ const navItems: NavItem[] = [
   {
     label: 'Fincas',
     to: '/dashboard/fincas',
+    modulo: 'fincas',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
@@ -44,6 +59,7 @@ const navItems: NavItem[] = [
     label: 'Cultivos',
     to: '/dashboard/cultivos',
     matchPrefix: true,
+    modulo: 'cultivos',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V9m0 0c0-4 3-6 6-6-1 3.5-3.5 6-6 6zm0 0C12 5 9 3 6 3c1 3.5 3.5 6 6 6z" />
@@ -54,6 +70,7 @@ const navItems: NavItem[] = [
     label: 'Sensores',
     to: '/dashboard/sensores',
     matchPrefix: true,
+    modulo: 'sensores',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
@@ -67,7 +84,7 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({ onClose }: SidebarContentProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, puede } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -97,32 +114,34 @@ function SidebarContent({ onClose }: SidebarContentProps) {
         <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
           General
         </p>
-        {navItems.map((item) => {
-          const isActive = item.matchPrefix
-            ? location.pathname.startsWith(item.to)
-            : location.pathname === item.to;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              onClick={onClose}
-              className={[
-                'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-100',
-                isActive
-                  ? 'bg-forest-50 text-forest-700'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
-              ].join(' ')}
-            >
-              <span className={isActive ? 'text-forest-600' : 'text-slate-400'}>
-                {item.icon}
-              </span>
-              {item.label}
-              {isActive && (
-                <span className="ml-auto h-1.5 w-1.5 rounded-full bg-forest-500" />
-              )}
-            </Link>
-          );
-        })}
+        {navItems
+          .filter(item => !item.modulo || puede(item.modulo, 'ver'))
+          .map((item) => {
+            const isActive = item.matchPrefix
+              ? location.pathname.startsWith(item.to)
+              : location.pathname === item.to;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={onClose}
+                className={[
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-100',
+                  isActive
+                    ? 'bg-forest-50 text-forest-700'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
+                ].join(' ')}
+              >
+                <span className={isActive ? 'text-forest-600' : 'text-slate-400'}>
+                  {item.icon}
+                </span>
+                {item.label}
+                {isActive && (
+                  <span className="ml-auto h-1.5 w-1.5 rounded-full bg-forest-500" />
+                )}
+              </Link>
+            );
+          })}
       </nav>
 
       <div className="shrink-0 border-t border-slate-100 p-3 space-y-1">

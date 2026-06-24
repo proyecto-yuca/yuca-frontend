@@ -26,7 +26,7 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authService.login({ email, password });
-      signIn(response.token, response.user);
+      signIn(response.token, response.user, response.permisos);
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión.');

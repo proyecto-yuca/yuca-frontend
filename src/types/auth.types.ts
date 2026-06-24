@@ -27,17 +27,35 @@ export interface UpdateProfileRequest {
   current_password: string;
 }
 
-export interface AuthResponse {
-  token: string;
-  user: User;
+export interface Rol {
+  id: number;
+  identificador: string;
+  nombre: string;
+  sistema: boolean;
 }
+
+export interface PermisoAcciones {
+  ver: boolean;
+  crear: boolean;
+  editar: boolean;
+  eliminar: boolean;
+}
+
+export type Permisos = Record<string, PermisoAcciones>;
 
 export interface User {
   id: number;
   name: string;
   email: string;
+  rol: Rol;
   created_at: string;
   updated_at: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+  permisos: Permisos;
 }
 
 export interface ApiError {

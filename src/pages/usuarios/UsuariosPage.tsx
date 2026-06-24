@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -70,41 +71,45 @@ interface RowMenuProps {
 
 function RowMenu({ usuario, isSelf, toggling, onEdit, onResetPassword, onToggle, onDelete }: RowMenuProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('keydown', handleKey);
+    const close = () => setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
     return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('keydown', handleKey);
+      document.removeEventListener('mousedown', close);
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
     };
   }, [open]);
 
+  const handleOpen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const MENU_HEIGHT = 220;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < MENU_HEIGHT) {
+      setMenuStyle({ position: 'fixed', bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right });
+    } else {
+      setMenuStyle({ position: 'fixed', top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen(prev => !prev);
+  };
+
   const close = () => setOpen(false);
 
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        type="button"
-        onClick={() => setOpen(prev => !prev)}
-        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-400"
-        aria-label="Acciones"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-          <circle cx="12" cy="5" r="1.5" />
-          <circle cx="12" cy="12" r="1.5" />
-          <circle cx="12" cy="19" r="1.5" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-full z-30 mt-1 w-56 rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg">
+  const menu = open ? (
+    <div
+      style={menuStyle}
+      className="z-[9999] w-56 rounded-xl border border-slate-200 bg-white py-1.5 shadow-lg"
+      onMouseDown={e => e.stopPropagation()}
+    >
           {/* Editar */}
           <button
             type="button"
@@ -157,8 +162,25 @@ function RowMenu({ usuario, isSelf, toggling, onEdit, onResetPassword, onToggle,
             </svg>
             Eliminar
           </button>
-        </div>
-      )}
+    </div>
+  ) : null;
+
+  return (
+    <div className="flex justify-end">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={handleOpen}
+        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest-400"
+        aria-label="Acciones"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <circle cx="12" cy="5" r="1.5" />
+          <circle cx="12" cy="12" r="1.5" />
+          <circle cx="12" cy="19" r="1.5" />
+        </svg>
+      </button>
+      {menu && createPortal(menu, document.body)}
     </div>
   );
 }
@@ -610,7 +632,7 @@ export function UsuariosPage() {
                                   </span>
                                 )}
                               </p>
-                              <p className="text-xs text-slate-400 truncate sm:hidden">{usuario.email}</p>
+                              <p className="text-xs text-slate-400 truncate">{usuario.rol.nombre}</p>
                             </div>
                           </div>
                         </td>

@@ -9,6 +9,9 @@ import fincasService from '../../services/fincas/fincasService';
 import { isApiError } from '../../services/api/ApiError';
 import type { Cultivo, CultivoFormData } from '../../types/cultivos.types';
 import type { Finca } from '../../types/fincas.types';
+import { CultivoLocationMap } from './CultivoLocationMap';
+
+const MAX_PUNTOS = 4;
 
 const EMPTY_FORM: CultivoFormData = {
   nombre: '',
@@ -318,8 +321,16 @@ export function CultivosPage() {
   };
 
   const addPoint = () => {
-    if (form.puntosUbicacion.length >= 4) return;
+    if (form.puntosUbicacion.length >= MAX_PUNTOS) return;
     setForm(prev => ({ ...prev, puntosUbicacion: [...prev.puntosUbicacion, { lat: '', lng: '' }] }));
+  };
+
+  const addPointAt = (lat: number, lng: number) => {
+    if (form.puntosUbicacion.length >= MAX_PUNTOS) return;
+    setForm(prev => ({
+      ...prev,
+      puntosUbicacion: [...prev.puntosUbicacion, { lat: String(lat), lng: String(lng) }],
+    }));
   };
 
   const removePoint = (index: number) => {
@@ -334,6 +345,15 @@ export function CultivosPage() {
       ...prev,
       puntosUbicacion: prev.puntosUbicacion.map((p, i) =>
         i === index ? { ...p, [field]: value } : p,
+      ),
+    }));
+  };
+
+  const movePoint = (index: number, lat: number, lng: number) => {
+    setForm(prev => ({
+      ...prev,
+      puntosUbicacion: prev.puntosUbicacion.map((p, i) =>
+        i === index ? { lat: String(lat), lng: String(lng) } : p,
       ),
     }));
   };
@@ -424,7 +444,7 @@ export function CultivosPage() {
             Puntos de ubicación{' '}
             <span className="text-xs font-normal text-slate-400">(mín. 3, máx. 4)</span>
           </label>
-          {form.puntosUbicacion.length < 4 && (
+          {form.puntosUbicacion.length < MAX_PUNTOS && (
             <button
               type="button"
               onClick={addPoint}
@@ -441,6 +461,16 @@ export function CultivosPage() {
         {formErrors.puntosUbicacion && (
           <p className="mb-2 text-xs text-red-500">{formErrors.puntosUbicacion}</p>
         )}
+
+        <div className="mb-3">
+          <CultivoLocationMap
+            points={form.puntosUbicacion}
+            maxPoints={MAX_PUNTOS}
+            onAddPoint={addPointAt}
+            onMovePoint={movePoint}
+            onRemovePoint={removePoint}
+          />
+        </div>
 
         {form.puntosUbicacion.length === 0 ? (
           <p className="rounded-lg border border-dashed border-slate-200 py-3 text-center text-xs text-slate-400">

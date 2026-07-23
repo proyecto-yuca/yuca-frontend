@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { APIProvider, Map, Marker, Polygon, useMap, type MapMouseEvent } from '@vis.gl/react-google-maps';
+import { orderPolygonPoints } from '../../lib/mapGeometry';
 
 export interface CultivoLocationMapPoint {
   lat: string;
@@ -44,19 +45,6 @@ function FitToPoints({ points }: { points: { lat: number; lng: number }[] }) {
   return null;
 }
 
-function toPolygonPath(validPoints: { lat: number; lng: number }[]) {
-  if (validPoints.length < 3) return [];
-  const centerLat = validPoints.reduce((sum, p) => sum + p.lat, 0) / validPoints.length;
-  const centerLng = validPoints.reduce((sum, p) => sum + p.lng, 0) / validPoints.length;
-  return [...validPoints]
-    .sort(
-      (a, b) =>
-        Math.atan2(a.lat - centerLat, a.lng - centerLng) -
-        Math.atan2(b.lat - centerLat, b.lng - centerLng),
-    )
-    .map(({ lat, lng }) => ({ lat, lng }));
-}
-
 export function CultivoLocationMap({
   points,
   maxPoints,
@@ -66,7 +54,7 @@ export function CultivoLocationMap({
 }: CultivoLocationMapProps) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   const validPoints = useMemo(() => parsePoints(points), [points]);
-  const polygonPaths = useMemo(() => toPolygonPath(validPoints), [validPoints]);
+  const polygonPaths = useMemo(() => orderPolygonPoints(validPoints), [validPoints]);
 
   const initialCenter = useMemo(() => {
     if (validPoints.length === 0) return DEFAULT_CENTER;

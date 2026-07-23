@@ -13,6 +13,8 @@ import type { Sensor, SensorFormData } from '../../types/sensor.types';
 import type { Finca } from '../../types/fincas.types';
 import type { Cultivo } from '../../types/cultivos.types';
 import type { Variable } from '../../types/variables.types';
+import { SensorLocationMap } from './SensorLocationMap';
+import { isPointInPolygon, orderPolygonPoints } from '../../lib/mapGeometry';
 
 const EMPTY_FORM: SensorFormData = {
   codigo: '',
@@ -36,7 +38,7 @@ function sensorToForm(sensor: Sensor): SensorFormData {
   };
 }
 
-function validateForm(form: SensorFormData): Record<string, string> {
+function validateForm(form: SensorFormData, cultivos: Cultivo[]): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!form.codigo.trim()) errors.codigo = 'El código es requerido';
   if (!form.nombre.trim()) errors.nombre = 'El nombre es requerido';
@@ -48,6 +50,17 @@ function validateForm(form: SensorFormData): Record<string, string> {
   if (hasLng && isNaN(parseFloat(form.lng))) errors.lng = 'Longitud inválida';
   if (hasLat && !hasLng) errors.lng = 'Ingresa la longitud';
   if (!hasLat && hasLng) errors.lat = 'Ingresa la latitud';
+
+  if (hasLat && hasLng && !errors.lat && !errors.lng && form.cultivoId) {
+    const cultivo = cultivos.find(c => c.id === form.cultivoId);
+    const polygon = orderPolygonPoints(cultivo?.puntosUbicacion ?? []);
+    if (polygon.length >= 3) {
+      const point = { lat: parseFloat(form.lat), lng: parseFloat(form.lng) };
+      if (!isPointInPolygon(point, polygon)) {
+        errors.posicion = 'El sensor debe ubicarse dentro del área del cultivo seleccionado.';
+      }
+    }
+  }
 
   if (form.variableIds.length === 0) errors.variableIds = 'Selecciona al menos una variable';
 
@@ -346,7 +359,7 @@ export function SensoresPage() {
 
   const handleCreate = async () => {
     if (!selectedFinca) return;
-    const errors = validateForm(form);
+    const errors = validateForm(form, cultivos);
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSubmitting(true);
     try {
@@ -363,7 +376,7 @@ export function SensoresPage() {
 
   const handleUpdate = async () => {
     if (!selectedFinca || !editTarget) return;
-    const errors = validateForm(form);
+    const errors = validateForm(form, cultivos);
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSubmitting(true);
     try {
@@ -435,27 +448,6 @@ export function SensoresPage() {
         placeholder="Describe la ubicación o función del sensor…"
       />
 
-      <div>
-        <p className="mb-1.5 block text-sm font-medium text-slate-700">
-          Posición{' '}
-          <span className="text-xs font-normal text-slate-400">(opcional)</span>
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            placeholder="Latitud"
-            value={form.lat}
-            onChange={e => setForm(prev => ({ ...prev, lat: e.target.value }))}
-            error={formErrors.lat}
-          />
-          <Input
-            placeholder="Longitud"
-            value={form.lng}
-            onChange={e => setForm(prev => ({ ...prev, lng: e.target.value }))}
-            error={formErrors.lng}
-          />
-        </div>
-      </div>
-
       {/* Cultivo selector */}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-slate-700">
@@ -472,6 +464,40 @@ export function SensoresPage() {
             <option key={c.id} value={c.id}>{c.nombre}</option>
           ))}
         </select>
+      </div>
+
+      <div>
+        <p className="mb-1.5 block text-sm font-medium text-slate-700">
+          Posición{' '}
+          <span className="text-xs font-normal text-slate-400">(opcional)</span>
+        </p>
+        {formErrors.posicion && (
+          <p className="mb-1.5 text-xs text-red-500">{formErrors.posicion}</p>
+        )}
+        <div className="mb-3">
+          <SensorLocationMap
+            lat={form.lat}
+            lng={form.lng}
+            cultivoPoints={cultivos.find(c => c.id === form.cultivoId)?.puntosUbicacion}
+            onSetPoint={(lat, lng) => setForm(prev => ({ ...prev, lat: String(lat), lng: String(lng) }))}
+            onClearPoint={() => setForm(prev => ({ ...prev, lat: '', lng: '' }))}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            placeholder="Latitud"
+            value={form.lat}
+            onChange={e => setForm(prev => ({ ...prev, lat: e.target.value }))}
+            error={formErrors.lat}
+          />
+          <Input
+            placeholder="Longitud"
+            value={form.lng}
+            onChange={e => setForm(prev => ({ ...prev, lng: e.target.value }))}
+            error={formErrors.lng}
+          />
+        </div>
       </div>
 
       {/* Variables multi-select */}

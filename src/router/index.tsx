@@ -7,12 +7,12 @@ import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { DashboardPage } from '../pages/dashboard/DashboardPage';
 import { FincasPage } from '../pages/fincas/FincasPage';
-import { FincaSensoresPage } from '../pages/fincas/FincaSensoresPage';
 import { CultivosPage } from '../pages/cultivos/CultivosPage';
 import { VariablesPage } from '../pages/variables/VariablesPage';
 import { SensoresPage } from '../pages/sensores/SensoresPage';
 import { PermisosPage } from '../pages/permisos/PermisosPage';
 import { UsuariosPage } from '../pages/usuarios/UsuariosPage';
+import { LecturasPage } from '../pages/lecturas/LecturasPage';
 
 export const router = createBrowserRouter([
   {
@@ -29,10 +29,10 @@ export const router = createBrowserRouter([
     children: [
       { path: '/dashboard', element: <DashboardPage /> },
       { path: '/dashboard/fincas', element: <FincasPage /> },
-      { path: '/dashboard/fincas/:fincaId/sensores', element: <FincaSensoresPage /> },
       { path: '/dashboard/cultivos', element: <CultivosPage /> },
       { path: '/dashboard/variables', element: <VariablesPage /> },
       { path: '/dashboard/sensores', element: <SensoresPage /> },
+      { path: '/dashboard/lecturas', element: <LecturasPage /> },
       { path: '/dashboard/permisos', element: <PermisosPage /> },
       { path: '/dashboard/usuarios', element: <UsuariosPage /> },
     ],

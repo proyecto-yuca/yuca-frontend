@@ -88,6 +88,17 @@ const navItems: NavItem[] = [
       </svg>
     ),
   },
+  {
+    label: 'Lectura',
+    to: '/dashboard/lecturas',
+    matchPrefix: true,
+    modulo: 'mediciones',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 15l4-4 3 3 5-6" />
+      </svg>
+    ),
+  },
 ];
 
 interface SidebarContentProps {

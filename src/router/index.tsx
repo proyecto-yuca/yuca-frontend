@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { PrivateRoute } from './PrivateRoute';
 import { PublicRoute } from './PublicRoute';
+import { RequirePermiso } from './RequirePermiso';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage';
@@ -28,11 +29,39 @@ export const router = createBrowserRouter([
     element: <PrivateRoute />,
     children: [
       { path: '/dashboard', element: <DashboardPage /> },
-      { path: '/dashboard/fincas', element: <FincasPage /> },
-      { path: '/dashboard/cultivos', element: <CultivosPage /> },
+      {
+        path: '/dashboard/fincas',
+        element: (
+          <RequirePermiso modulo="fincas">
+            <FincasPage />
+          </RequirePermiso>
+        ),
+      },
+      {
+        path: '/dashboard/cultivos',
+        element: (
+          <RequirePermiso modulo="cultivos">
+            <CultivosPage />
+          </RequirePermiso>
+        ),
+      },
       { path: '/dashboard/variables', element: <VariablesPage /> },
-      { path: '/dashboard/sensores', element: <SensoresPage /> },
-      { path: '/dashboard/lecturas', element: <LecturasPage /> },
+      {
+        path: '/dashboard/sensores',
+        element: (
+          <RequirePermiso modulo="sensores">
+            <SensoresPage />
+          </RequirePermiso>
+        ),
+      },
+      {
+        path: '/dashboard/lecturas',
+        element: (
+          <RequirePermiso modulo="mediciones">
+            <LecturasPage />
+          </RequirePermiso>
+        ),
+      },
       { path: '/dashboard/permisos', element: <PermisosPage /> },
       { path: '/dashboard/usuarios', element: <UsuariosPage /> },
     ],

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
+import { Tabs } from '../../components/ui/Tabs';
 import fincasService from '../../services/fincas/fincasService';
 import type {
   Finca,
@@ -382,6 +384,120 @@ function LoteForm({ form, errors, onChange }: LoteFormProps) {
   );
 }
 
+// ── Resumen tab ────────────────────────────────────────────────────────────────
+
+interface FincasResumenProps {
+  fincas: Finca[];
+  loading: boolean;
+}
+
+function FincasResumen({ fincas, loading }: FincasResumenProps) {
+  const stats = useMemo(() => {
+    const activas = fincas.filter((f) => f.estado === 'activo').length;
+    const areaTotal = fincas.reduce((sum, f) => sum + (f.area || 0), 0);
+    return {
+      total: fincas.length,
+      activas,
+      inactivas: fincas.length - activas,
+      areaTotal,
+    };
+  }, [fincas]);
+
+  const porDepartamento = useMemo(() => {
+    const counts = new Map<string, number>();
+    fincas.forEach((f) => {
+      const dep = f.ubicacion.departamento || 'Sin especificar';
+      counts.set(dep, (counts.get(dep) ?? 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([departamento, cantidad]) => ({ departamento, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 8);
+  }, [fincas]);
+
+  const porMes = useMemo(() => {
+    const counts = new Map<string, number>();
+    fincas.forEach((f) => {
+      const key = f.fechaRegistro.slice(0, 7);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, cantidad]) => ({
+        mes: new Date(`${key}-01T00:00:00`).toLocaleDateString('es-CO', { month: 'short', year: '2-digit' }),
+        cantidad,
+      }));
+  }, [fincas]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+        <svg className="h-7 w-7 animate-spin text-forest-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <span className="text-sm">Cargando resumen…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: 'Total fincas', value: stats.total, color: 'bg-forest-50 text-forest-700' },
+          { label: 'Activas', value: stats.activas, color: 'bg-emerald-50 text-emerald-700' },
+          { label: 'Inactivas', value: stats.inactivas, color: 'bg-slate-100 text-slate-600' },
+          { label: 'Área total (ha)', value: stats.areaTotal.toLocaleString('es-CO'), color: 'bg-earth-50 text-earth-700' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{s.label}</p>
+            <p className={`mt-1 text-xl font-bold ${s.color.split(' ')[1]}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Fincas por departamento</h3>
+        {porDepartamento.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No hay datos suficientes.</p>
+        ) : (
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porDepartamento} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="departamento" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="cantidad" name="Fincas" fill="#2E632B" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Fincas registradas por mes</h3>
+        {porMes.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No hay datos suficientes.</p>
+        ) : (
+          <div style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={porMes} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                <Tooltip />
+                <Area type="monotone" dataKey="cantidad" name="Fincas" stroke="#2E632B" fill="#2E632B" fillOpacity={0.15} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export function FincasPage() {
@@ -407,6 +523,12 @@ export function FincasPage() {
 
   // Toggle state loading
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Resumen tab
+  const [view, setView] = useState<'listado' | 'resumen'>('listado');
+  const [allFincas, setAllFincas] = useState<Finca[]>([]);
+  const [loadingResumen, setLoadingResumen] = useState(false);
+  const [resumenLoaded, setResumenLoaded] = useState(false);
 
   // Toast
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -440,6 +562,20 @@ export function FincasPage() {
   useEffect(() => {
     setPage(1);
   }, [filters.search, filters.estado]);
+
+  // Load full fincas list for the Resumen tab (lazy, once)
+  useEffect(() => {
+    if (view !== 'resumen' || resumenLoaded) return;
+    setLoadingResumen(true);
+    fincasService
+      .getAll({ search: '', estado: 'todos' }, 1, 1000)
+      .then((result) => {
+        setAllFincas(result.data);
+        setResumenLoaded(true);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingResumen(false));
+  }, [view, resumenLoaded]);
 
   // ── Form handlers ─────────────────────────────────────────────────────────
 
@@ -550,6 +686,20 @@ export function FincasPage() {
           </Button>
         </div>
 
+        {/* Tabs */}
+        <Tabs
+          tabs={[
+            { value: 'listado', label: 'Listado' },
+            { value: 'resumen', label: 'Resumen' },
+          ]}
+          active={view}
+          onChange={setView}
+        />
+
+        {view === 'resumen' ? (
+          <FincasResumen fincas={allFincas} loading={loadingResumen} />
+        ) : (
+          <>
         {/* Stats strip */}
         <div className="grid grid-cols-3 gap-3">
           {[
@@ -745,6 +895,8 @@ export function FincasPage() {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* ── Create / Edit Modal ───────────────────────────────────────────── */}

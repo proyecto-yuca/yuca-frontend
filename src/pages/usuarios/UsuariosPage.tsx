@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
+import { Tabs } from '../../components/ui/Tabs';
 import usuariosService from '../../services/usuarios/usuariosService';
 import rolesService from '../../services/permisos/rolesService';
 import { isApiError } from '../../services/api/ApiError';
@@ -223,6 +225,66 @@ function EmptyState({ onAdd }: EmptyStateProps) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+// ── Resumen tab ────────────────────────────────────────────────────────────────
+
+interface UsuariosResumenProps {
+  usuarios: Usuario[];
+}
+
+function UsuariosResumen({ usuarios }: UsuariosResumenProps) {
+  const stats = useMemo(() => {
+    const activos = usuarios.filter((u) => u.estado).length;
+    return { total: usuarios.length, activos, inactivos: usuarios.length - activos };
+  }, [usuarios]);
+
+  const porRol = useMemo(() => {
+    const counts = new Map<string, number>();
+    usuarios.forEach((u) => {
+      const nombre = u.rol?.nombre ?? 'Sin rol';
+      counts.set(nombre, (counts.get(nombre) ?? 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .map(([rol, cantidad]) => ({ rol, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [usuarios]);
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Total usuarios', value: stats.total, color: 'text-forest-700' },
+          { label: 'Activos', value: stats.activos, color: 'text-emerald-700' },
+          { label: 'Inactivos', value: stats.inactivos, color: 'text-slate-600' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{s.label}</p>
+            <p className={`mt-1 text-xl font-bold ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Usuarios por rol</h3>
+        {porRol.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No hay usuarios registrados.</p>
+        ) : (
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porRol} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="rol" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="cantidad" name="Usuarios" fill="#2E632B" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function UsuariosPage() {
   const { user: authUser } = useAuth();
 
@@ -256,6 +318,9 @@ export function UsuariosPage() {
   const [deleteTarget, setDeleteTarget] = useState<Usuario | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
+
+  // Resumen tab
+  const [view, setView] = useState<'listado' | 'resumen'>('listado');
 
   // ── Load on mount ───────────────────────────────────────────────────────────
 
@@ -589,8 +654,27 @@ export function UsuariosPage() {
 
         {!loading && !error && usuarios.length === 0 && <EmptyState onAdd={openCreate} />}
 
-        {/* Table */}
+        {/* Tabs */}
         {!loading && !error && usuarios.length > 0 && (
+          <div className="mb-5">
+            <Tabs
+              tabs={[
+                { value: 'listado', label: 'Listado' },
+                { value: 'resumen', label: 'Resumen' },
+              ]}
+              active={view}
+              onChange={setView}
+            />
+          </div>
+        )}
+
+        {/* Resumen */}
+        {!loading && !error && usuarios.length > 0 && view === 'resumen' && (
+          <UsuariosResumen usuarios={usuarios} />
+        )}
+
+        {/* Table */}
+        {!loading && !error && usuarios.length > 0 && view === 'listado' && (
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-100">

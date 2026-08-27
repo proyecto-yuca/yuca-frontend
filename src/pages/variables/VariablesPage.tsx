@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
+import { Tabs } from '../../components/ui/Tabs';
 import variablesService from '../../services/variables/variablesService';
+import dashboardStatsService, {
+  type SensorPorVariable,
+} from '../../services/dashboard/dashboardStatsService';
 import { isApiError } from '../../services/api/ApiError';
 import type { Variable, VariableFormData } from '../../types/variables.types';
 
@@ -75,6 +80,66 @@ function EmptyState({ onAdd }: EmptyStateProps) {
   );
 }
 
+// ── Resumen tab ────────────────────────────────────────────────────────────────
+
+interface VariablesResumenProps {
+  totalVariables: number;
+  porVariable: SensorPorVariable[];
+  loading: boolean;
+}
+
+function VariablesResumen({ totalVariables, porVariable, loading }: VariablesResumenProps) {
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
+        <svg className="h-7 w-7 animate-spin text-forest-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <span className="text-sm">Cargando resumen…</span>
+      </div>
+    );
+  }
+
+  const conSensores = porVariable.reduce((sum, v) => sum + v.cantidad, 0);
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {[
+          { label: 'Total variables', value: totalVariables, color: 'text-forest-700' },
+          { label: 'Variables en uso', value: porVariable.length, color: 'text-emerald-700' },
+          { label: 'Sensores asignados (todas las fincas)', value: conSensores, color: 'text-earth-700' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{s.label}</p>
+            <p className={`mt-1 text-xl font-bold ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Sensores por variable (todas las fincas)</h3>
+        {porVariable.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">Ninguna variable está asignada a sensores todavía.</p>
+        ) : (
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porVariable} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="variable" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="cantidad" name="Sensores" fill="#2E632B" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function VariablesPage() {
@@ -94,6 +159,12 @@ export function VariablesPage() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Resumen tab
+  const [view, setView] = useState<'listado' | 'resumen'>('listado');
+  const [porVariable, setPorVariable] = useState<SensorPorVariable[]>([]);
+  const [loadingResumen, setLoadingResumen] = useState(false);
+  const [resumenLoaded, setResumenLoaded] = useState(false);
 
   // ── Load variables ──────────────────────────────────────────────────────────
 
@@ -128,6 +199,21 @@ export function VariablesPage() {
   };
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
+
+  // ── Load global "sensores por variable" for the Resumen tab (lazy, once) ────
+
+  useEffect(() => {
+    if (view !== 'resumen' || resumenLoaded) return;
+    setLoadingResumen(true);
+    dashboardStatsService
+      .getSensoresPorVariableGlobal()
+      .then((data) => {
+        setPorVariable(data);
+        setResumenLoaded(true);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingResumen(false));
+  }, [view, resumenLoaded]);
 
   // ── Form helpers ────────────────────────────────────────────────────────────
 
@@ -312,8 +398,27 @@ export function VariablesPage() {
           <EmptyState onAdd={openCreate} />
         )}
 
-        {/* Table */}
+        {/* Tabs */}
         {!loading && !error && variables.length > 0 && (
+          <div className="mb-5">
+            <Tabs
+              tabs={[
+                { value: 'listado', label: 'Listado' },
+                { value: 'resumen', label: 'Resumen' },
+              ]}
+              active={view}
+              onChange={setView}
+            />
+          </div>
+        )}
+
+        {/* Resumen */}
+        {!loading && !error && variables.length > 0 && view === 'resumen' && (
+          <VariablesResumen totalVariables={variables.length} porVariable={porVariable} loading={loadingResumen} />
+        )}
+
+        {/* Table */}
+        {!loading && !error && variables.length > 0 && view === 'listado' && (
           <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-100">

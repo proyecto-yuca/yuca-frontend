@@ -3,3 +3,4 @@ export { Input } from './Input';
 export { Alert } from './Alert';
 export { Modal } from './Modal';
 export { Select } from './Select';
+export { Tabs } from './Tabs';

@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
+import { Tabs } from '../../components/ui/Tabs';
 import sensorService from '../../services/sensores/sensorService';
 import fincasService from '../../services/fincas/fincasService';
 import cultivosService from '../../services/cultivos/cultivosService';
@@ -106,6 +108,100 @@ function EmptyState({ onAdd }: EmptyStateProps) {
   );
 }
 
+// ── Resumen tab ────────────────────────────────────────────────────────────────
+
+interface SensoresResumenProps {
+  sensores: Sensor[];
+}
+
+function SensoresResumen({ sensores }: SensoresResumenProps) {
+  const stats = useMemo(() => {
+    const activos = sensores.filter((s) => s.activo).length;
+    const sinCultivo = sensores.filter((s) => !s.cultivo).length;
+    return { total: sensores.length, activos, inactivos: sensores.length - activos, sinCultivo };
+  }, [sensores]);
+
+  const porVariable = useMemo(() => {
+    const counts = new Map<string, number>();
+    sensores.forEach((s) => {
+      s.variables.forEach((v) => counts.set(v.nombre, (counts.get(v.nombre) ?? 0) + 1));
+    });
+    return Array.from(counts.entries())
+      .map(([variable, cantidad]) => ({ variable, cantidad }))
+      .sort((a, b) => b.cantidad - a.cantidad);
+  }, [sensores]);
+
+  const porMes = useMemo(() => {
+    const counts = new Map<string, number>();
+    sensores.forEach((s) => {
+      const key = s.createdAt.slice(0, 7);
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, cantidad]) => ({
+        mes: new Date(`${key}-01T00:00:00`).toLocaleDateString('es-CO', { month: 'short', year: '2-digit' }),
+        cantidad,
+      }));
+  }, [sensores]);
+
+  return (
+    <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: 'Total sensores', value: stats.total, color: 'text-forest-700' },
+          { label: 'Activos', value: stats.activos, color: 'text-emerald-700' },
+          { label: 'Inactivos', value: stats.inactivos, color: 'text-slate-600' },
+          { label: 'Sin cultivo', value: stats.sinCultivo, color: 'text-earth-700' },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm">
+            <p className="text-xs text-slate-500">{s.label}</p>
+            <p className={`mt-1 text-xl font-bold ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Sensores por variable</h3>
+        {porVariable.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No hay variables asignadas a sensores de esta finca.</p>
+        ) : (
+          <div style={{ height: 260 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porVariable} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="variable" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="cantidad" name="Sensores" fill="#2E632B" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-white p-4 sm:p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900 mb-4">Sensores instalados por mes</h3>
+        {porMes.length === 0 ? (
+          <p className="py-8 text-center text-sm text-slate-400">No hay datos suficientes.</p>
+        ) : (
+          <div style={{ height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={porMes} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={30} allowDecimals={false} />
+                <Tooltip />
+                <Area type="monotone" dataKey="cantidad" name="Sensores" stroke="#2E632B" fill="#2E632B" fillOpacity={0.15} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export function SensoresPage() {
@@ -133,6 +229,9 @@ export function SensoresPage() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Resumen tab
+  const [view, setView] = useState<'listado' | 'resumen'>('listado');
 
   // ── Load fincas on mount ────────────────────────────────────────────────────
 
@@ -481,8 +580,27 @@ export function SensoresPage() {
           </div>
         )}
 
-        {/* Sensores area */}
+        {/* Tabs */}
         {showContent && (
+          <div className="mb-5">
+            <Tabs
+              tabs={[
+                { value: 'listado', label: 'Listado' },
+                { value: 'resumen', label: 'Resumen' },
+              ]}
+              active={view}
+              onChange={setView}
+            />
+          </div>
+        )}
+
+        {/* Resumen */}
+        {showContent && view === 'resumen' && !loadingSensores && (
+          <SensoresResumen sensores={sensores} />
+        )}
+
+        {/* Sensores area */}
+        {showContent && view === 'listado' && (
           <>
             {loadingSensores && <LoadingSensores />}
 

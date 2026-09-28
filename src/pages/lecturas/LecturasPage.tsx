@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { FincaSelector } from '../../components/selectors/FincaSelector';
@@ -14,6 +15,7 @@ import type { Finca } from '../../types/fincas.types';
 import type { Cultivo } from '../../types/cultivos.types';
 import type { Sensor } from '../../types/sensor.types';
 import { SensorLecturasPanel } from './SensorLecturasPanel';
+import { AlertasPanel } from './AlertasPanel';
 
 // ── Resumen tab ────────────────────────────────────────────────────────────────
 
@@ -155,7 +157,11 @@ export function LecturasPage() {
 
   const [selectedSensorId, setSelectedSensorId] = useState('');
 
-  const [view, setView] = useState<'listado' | 'resumen'>('listado');
+  const [view, setView] = useState<'listado' | 'alertas' | 'resumen'>('listado');
+
+  // Enlace desde el correo de alerta: /dashboard/lecturas?finca=ID&sensor=ID
+  const [searchParams] = useSearchParams();
+  const pendingLink = useRef({ fincaId: searchParams.get('finca'), sensorId: searchParams.get('sensor') });
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +171,9 @@ export function LecturasPage() {
       .then(result => {
         if (cancelled) return;
         setFincas(result.data);
-        if (result.data.length > 0) setSelectedFinca(result.data[0]);
+        const linked = result.data.find(f => f.id === pendingLink.current.fincaId);
+        if (!linked) pendingLink.current = { fincaId: null, sensorId: null };
+        if (result.data.length > 0) setSelectedFinca(linked ?? result.data[0]);
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingFincas(false); });
@@ -186,7 +194,16 @@ export function LecturasPage() {
         if (cancelled) return;
         setCultivos(cultivosData);
         setSensores(sensoresData);
-        if (cultivosData.length > 0) setSelectedCultivoId(cultivosData[0].id);
+        const linkedSensor = sensoresData.find(s => s.id === pendingLink.current.sensorId);
+        if (linkedSensor?.cultivo) {
+          setView('listado');
+          setSelectedCultivoId(linkedSensor.cultivo.id);
+          setSelectedSensorId(linkedSensor.id);
+        } else if (cultivosData.length > 0) {
+          setSelectedCultivoId(cultivosData[0].id);
+        }
+        // El enlace se aplica una sola vez; al cambiar de finca manda la selección del usuario.
+        pendingLink.current = { fincaId: null, sensorId: null };
       })
       .catch(() => {
         if (cancelled) return;
@@ -235,12 +252,17 @@ export function LecturasPage() {
             <Tabs
               tabs={[
                 { value: 'listado', label: 'Listado' },
+                { value: 'alertas', label: 'Alertas' },
                 { value: 'resumen', label: 'Resumen' },
               ]}
               active={view}
               onChange={setView}
             />
           </div>
+        )}
+
+        {selectedFinca && view === 'alertas' && (
+          <AlertasPanel fincaId={selectedFinca.id} sensores={sensores} />
         )}
 
         {selectedFinca && view === 'resumen' && (

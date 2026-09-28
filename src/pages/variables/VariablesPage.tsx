@@ -6,18 +6,28 @@ import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
 import { Tabs } from '../../components/ui/Tabs';
-import variablesService from '../../services/variables/variablesService';
+import variablesService, { orderEventosForSubmit } from '../../services/variables/variablesService';
+import {
+  SEVERIDAD_ESTILOS,
+  eventoToForm,
+  formatRango,
+  mapEventoApiErrors,
+  newEventoForm,
+  validateEventos,
+} from '../../lib/eventos';
+import { VariableEventoCard } from './VariableEventoCard';
 import dashboardStatsService, {
   type SensorPorVariable,
 } from '../../services/dashboard/dashboardStatsService';
 import { isApiError } from '../../services/api/ApiError';
-import type { Variable, VariableFormData } from '../../types/variables.types';
+import type { Variable, VariableEventoFormData, VariableFormData } from '../../types/variables.types';
 
 const EMPTY_FORM: VariableFormData = {
   nombre: '',
   unidad: '',
   decimales: '1',
   descripcion: '',
+  eventos: [],
 };
 
 function variableToForm(variable: Variable): VariableFormData {
@@ -26,6 +36,7 @@ function variableToForm(variable: Variable): VariableFormData {
     unidad: variable.unidad,
     decimales: String(variable.decimales),
     descripcion: variable.descripcion ?? '',
+    eventos: variable.eventos.map(eventoToForm),
   };
 }
 
@@ -39,7 +50,43 @@ function validateForm(form: VariableFormData): Record<string, string> {
     const d = parseInt(form.decimales, 10);
     if (isNaN(d) || d < 0 || d > 10) errors.decimales = 'Ingresa un valor entre 0 y 10';
   }
-  return errors;
+  return { ...errors, ...validateEventos(form.eventos) };
+}
+
+function EventosChips({ variable }: { variable: Variable }) {
+  if (variable.eventos.length === 0) {
+    return <span className="text-xs text-slate-300">Sin eventos</span>;
+  }
+  return (
+    <div className="flex flex-col items-start gap-1">
+      {variable.eventos.map(e => {
+        const estilo = SEVERIDAD_ESTILOS[e.severidad];
+        return (
+          <span
+            key={e.id}
+            title={e.notificaciones.email ? `Correo a: ${e.notificaciones.emails.join(', ')}` : 'Sin correo'}
+            className={[
+              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-medium',
+              estilo.badge,
+              e.activo ? '' : 'opacity-50 line-through',
+            ].join(' ')}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${estilo.dot}`} />
+            {e.nombre}
+            <span className="font-normal opacity-80">{formatRango(e.rango.min, e.rango.max, variable.unidad)}</span>
+            {e.notificaciones.email && (
+              <span className="inline-flex items-center gap-0.5 font-normal opacity-80">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                {e.notificaciones.emails.length}
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -254,17 +301,23 @@ export function VariablesPage() {
 
   const applyApiErrors = (err: unknown) => {
     if (isApiError(err) && err.fieldErrors) {
-      const mapped: Record<string, string> = {};
-      Object.entries(err.fieldErrors).forEach(([key, msgs]) => { mapped[key] = msgs[0]; });
-      setFormErrors(mapped);
+      showErrors(mapEventoApiErrors(err.fieldErrors, orderEventosForSubmit(form.eventos)));
     } else {
       setModalError(isApiError(err) ? err.message : 'Ocurrió un error inesperado.');
     }
   };
 
+  // Los eventos con error pueden quedar fuera de la vista dentro del modal.
+  const showErrors = (errors: Record<string, string>) => {
+    setFormErrors(errors);
+    requestAnimationFrame(() => {
+      document.querySelector('[data-has-error="true"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  };
+
   const handleCreate = async () => {
     const errors = validateForm(form);
-    if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
+    if (Object.keys(errors).length > 0) { showErrors(errors); return; }
     setSubmitting(true);
     try {
       const created = await variablesService.create(form);
@@ -281,7 +334,7 @@ export function VariablesPage() {
   const handleUpdate = async () => {
     if (!editTarget) return;
     const errors = validateForm(form);
-    if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
+    if (Object.keys(errors).length > 0) { showErrors(errors); return; }
     setSubmitting(true);
     try {
       const updated = await variablesService.update(editTarget.id, form);
@@ -308,6 +361,28 @@ export function VariablesPage() {
     } finally {
       setDeleting(false);
     }
+  };
+
+  // ── Eventos ─────────────────────────────────────────────────────────────────
+
+  const eventosVisibles = form.eventos.filter(e => !e.eliminado);
+
+  const addEvento = () => {
+    setForm(prev => ({ ...prev, eventos: [...prev.eventos, newEventoForm()] }));
+  };
+
+  const updateEvento = (evento: VariableEventoFormData) => {
+    setForm(prev => ({ ...prev, eventos: prev.eventos.map(e => (e.key === evento.key ? evento : e)) }));
+  };
+
+  // Los existentes se marcan para `_destroy`; los nuevos simplemente se quitan.
+  const removeEvento = (evento: VariableEventoFormData) => {
+    setForm(prev => ({
+      ...prev,
+      eventos: evento.id
+        ? prev.eventos.map(e => (e.key === evento.key ? { ...e, eliminado: true } : e))
+        : prev.eventos.filter(e => e.key !== evento.key),
+    }));
   };
 
   // ── Form UI ─────────────────────────────────────────────────────────────────
@@ -347,6 +422,54 @@ export function VariablesPage() {
         onChange={e => setForm(prev => ({ ...prev, descripcion: e.target.value }))}
         placeholder="Describe la variable de medición…"
       />
+
+      <div className="border-t border-slate-100 pt-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Eventos de tolerancia</h3>
+            <p className="text-xs text-slate-500">
+              Define uno o varios rangos permitidos. Cuando una lectura sale de un rango se registra una alerta y, si lo activas, se envía un correo.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addEvento}
+            className="flex shrink-0 items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-forest-600 hover:bg-forest-50 hover:text-forest-700 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar evento
+          </button>
+        </div>
+
+        {formErrors.eventos && <p className="mb-2 text-xs text-red-500">{formErrors.eventos}</p>}
+
+        {eventosVisibles.length === 0 ? (
+          <button
+            type="button"
+            onClick={addEvento}
+            className="w-full rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center transition-colors hover:border-forest-300 hover:bg-forest-50/40"
+          >
+            <p className="text-sm font-medium text-slate-600">Esta variable no tiene eventos</p>
+            <p className="mt-0.5 text-xs text-slate-400">Sus lecturas no se marcarán como fuera de rango. Clic para agregar uno.</p>
+          </button>
+        ) : (
+          <div className="space-y-2.5">
+            {eventosVisibles.map(evento => (
+              <VariableEventoCard
+                key={evento.key}
+                evento={evento}
+                unidad={form.unidad}
+                errors={formErrors}
+                defaultOpen={!evento.id}
+                onChange={updateEvento}
+                onRemove={() => removeEvento(evento)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -433,7 +556,10 @@ export function VariablesPage() {
                     <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Decimales
                     </th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      Eventos
+                    </th>
+                    <th className="hidden 2xl:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
                       Descripción
                     </th>
                     <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -458,7 +584,10 @@ export function VariablesPage() {
                       <td className="hidden sm:table-cell px-4 py-3.5">
                         <span className="text-sm text-slate-500">{variable.decimales}</span>
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3.5 max-w-[200px]">
+                      <td className="px-4 py-3.5">
+                        <EventosChips variable={variable} />
+                      </td>
+                      <td className="hidden 2xl:table-cell px-4 py-3.5 max-w-[200px]">
                         <span className="text-sm text-slate-500 line-clamp-2">
                           {variable.descripcion || <span className="text-slate-300">—</span>}
                         </span>
@@ -506,7 +635,7 @@ export function VariablesPage() {
           open={createOpen}
           onClose={closeCreate}
           title="Agregar variable"
-          size="md"
+          size="lg"
           footer={
             <div className="flex items-center justify-end gap-3">
               <Button variant="ghost" onClick={closeCreate} disabled={submitting}>Cancelar</Button>
@@ -522,7 +651,7 @@ export function VariablesPage() {
           open={!!editTarget}
           onClose={closeEdit}
           title="Editar variable"
-          size="md"
+          size="lg"
           footer={
             <div className="flex items-center justify-end gap-3">
               <Button variant="ghost" onClick={closeEdit} disabled={submitting}>Cancelar</Button>

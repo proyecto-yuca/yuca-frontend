@@ -16,6 +16,7 @@ const lecturasService = {
     if (filters.fechaDesde) params.fecha_desde = filters.fechaDesde;
     if (filters.fechaHasta) params.fecha_hasta = filters.fechaHasta;
     if (filters.variableId) params.variable_id = filters.variableId;
+    if (filters.soloFueraDeRango) params.estado = 'fuera';
 
     const response = await privateClient.get<PaginatedLecturas>(
       `/fincas/${fincaId}/sensores/${sensorId}/lecturas`,

@@ -165,3 +165,78 @@ src/pages/sensores/SensoresPage.tsx        ← pasa selectedFinca.puntosUbicacio
 | Editor con un solo `onChange` | El editor de puntos emite la lista completa; la página solo guarda el estado |
 | Validación geométrica en `lib/mapGeometry.ts` | Lógica pura (orden de polígono, contención, validación de form) separada de los componentes |
 | Misma geometría que el backend | El backend (`PuntosUbicacion` concern) replica `orderPolygonPoints` + `isPointInPolygon`, así que frontend y backend nunca discrepan |
+
+---
+
+# Parte 2 — Eventos de tolerancia y alertas
+
+> Contraparte backend: `yuca-backend/docs/SESION_2026_09_28.md` (Parte 2) y plan `PLAN_RANGOS_TOLERANCIA_2026_09_28.md`.
+
+## 1. Archivos
+
+```
+src/types/variables.types.ts                 ← VariableEvento, VariableEventoFormData, eventos en Variable
+src/types/lecturas.types.ts                  ← estado, eventos disparados, variable.rangos
+src/types/alertas.types.ts                   ← nuevo
+src/services/variables/variablesService.ts   ← eventos_attributes + orderEventosForSubmit
+src/services/lecturas/lecturasService.ts     ← filtro soloFueraDeRango (estado=fuera)
+src/services/alertas/alertasService.ts       ← nuevo
+src/services/dashboard/dashboardStatsService.ts ← getResumenAlertas
+src/lib/eventos.ts                           ← nuevo: estilos por severidad, formatRango, validación, mapeo de 422
+src/components/ui/TagListInput.tsx           ← nuevo: lista de correos como chips
+src/pages/variables/VariableEventoCard.tsx   ← nuevo
+src/pages/variables/VariablesPage.tsx        ← sección Eventos + columna Eventos
+src/pages/lecturas/SensorLecturasPanel.tsx   ← zona óptima, líneas por evento, puntos y badges por estado
+src/pages/lecturas/AlertasPanel.tsx          ← nuevo: pestaña Alertas
+src/pages/lecturas/LecturasPage.tsx          ← pestaña Alertas + enlace ?finca=&sensor=
+src/pages/dashboard/DashboardPage.tsx        ← tarjeta Alertas recientes
+```
+
+## 2. Variables → Eventos
+
+- El modal de la variable (ahora `size="lg"`) tiene la sección **Eventos de tolerancia**, con el botón *Agregar evento*.
+- **Tarjeta de evento** (`VariableEventoCard`), colapsable:
+  - **Encabezado:** nombre, badge de severidad, rango y cantidad de correos.
+  - **Cuerpo:** nombre, severidad (Alerta / Crítico), mínimo / máximo con la unidad, switch *Enviar correo* con la lista de correos (`TagListInput`) e intervalo, switch *Evento activo* y botón de eliminar.
+  - Los eventos existentes se eliminan con `_destroy`; los nuevos simplemente se quitan de la lista.
+- **`TagListInput`:**
+  - se agrega con Enter, coma o `;`, y se pueden pegar varios a la vez;
+  - Backspace con el campo vacío quita el último;
+  - valida el formato del correo, normaliza a minúsculas, evita duplicados y admite máximo 10.
+- **Validación en el cliente** (`validateEventos`): nombre, al menos un límite, `min < max`, intervalo ≥ 1, al menos un correo con *Enviar correo* activo y nombres únicos. Al fallar, el modal se desplaza al primer evento con error.
+- **Errores `422`:** `eventos[i].campo` se traduce a la tarjeta correcta con `mapEventoApiErrors`. Para que los índices coincidan con los del backend, `orderEventosForSubmit` envía primero los eventos existentes en su orden original y luego los nuevos.
+- **Tabla:** columna **Eventos** con chips por severidad (`Humedad crítica 30 – 90 % ✉ 1`). La descripción se muestra desde `2xl`.
+
+## 3. Lecturas
+
+- **Gráfico:**
+  - zona óptima sombreada en verde (la intersección de todos los rangos);
+  - una línea punteada por límite de cada evento (ámbar alerta, rojo crítico) con etiqueta `mín` / `máx`;
+  - puntos fuera de rango más grandes y con el color de su severidad;
+  - el eje Y siempre incluye los límites.
+- **Tabla:** columna **Estado** (Normal / Alerta / Crítico, con ▲▼ y un tooltip con los eventos disparados).
+- **Filtro:** *Solo fuera de rango*.
+- **Pestaña Alertas** (`AlertasPanel`):
+  - filtros por severidad, variable y sensor;
+  - tabla con evento, valor ▲▼, rango permitido, sensor / cultivo, fecha y estado del correo (*Enviado a N correos*, *Omitido por intervalo*, *Sin correo*, *Error al enviar*, *Pendiente*).
+- **Enlace desde el correo:** `/dashboard/lecturas?finca=ID&sensor=ID` abre esa finca, su cultivo y el sensor. Se aplica una sola vez al montar la página y se queda en la URL, así que al recargar vuelve al mismo sensor.
+
+## 4. Dashboard
+
+Tarjeta **Alertas recientes**, entre *Acciones rápidas* y *Últimas lecturas*:
+- contadores *N hoy* y *M críticas*;
+- las últimas 5 alertas de todas las fincas, con un ícono de correo enviado o no enviado;
+- cada fila abre el sensor en Lecturas.
+
+Si el usuario no tiene permiso de mediciones, muestra "Todo en rango" en lugar de fallar.
+
+## 5. Verificación realizada
+
+- `npx tsc -b` y `npm run build` sin errores.
+- `npx eslint` sin errores en los archivos nuevos o tocados en esta parte. `npm run lint` sigue con los 10 errores que ya existían (`react-hooks/set-state-in-effect` y `only-export-components` en archivos previos).
+- Flujo completo en navegador (Playwright + Chrome) contra el backend local (`localhost:3001`, Postgres en Docker), **sin errores de consola**:
+  1. login → Dashboard con *Alertas recientes* (7 hoy, 3 críticas);
+  2. Variables → editar Humedad → agregar evento vacío → la validación muestra los errores y hace scroll hasta el evento;
+  3. se completa el evento con 2 correos pegados de una vez → se guarda y aparece el chip en la tabla;
+  4. enlace del correo `?finca=8&sensor=3` → se abre el sensor correcto con la zona óptima y las líneas de los eventos;
+  5. *Solo fuera de rango* y pestaña *Alertas* con el estado de cada correo.

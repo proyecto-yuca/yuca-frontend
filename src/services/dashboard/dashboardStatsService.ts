@@ -2,13 +2,26 @@ import fincasService from '../fincas/fincasService';
 import cultivosService from '../cultivos/cultivosService';
 import sensorService from '../sensores/sensorService';
 import lecturasService from '../lecturas/lecturasService';
+import alertasService from '../alertas/alertasService';
 import type { Finca } from '../../types/fincas.types';
 import type { Sensor } from '../../types/sensor.types';
 import type { Lectura } from '../../types/lecturas.types';
+import type { Alerta } from '../../types/alertas.types';
 
 export interface LecturaConFinca extends Lectura {
   fincaId: string;
   fincaNombre: string;
+}
+
+export interface AlertaConFinca extends Alerta {
+  fincaId: string;
+  fincaNombre: string;
+}
+
+export interface ResumenAlertas {
+  hoy: number;
+  criticasHoy: number;
+  ultimas: AlertaConFinca[];
 }
 
 export interface ResumenGeneral {
@@ -19,6 +32,7 @@ export interface ResumenGeneral {
   sensoresActivos: number;
   lecturasHoy: number;
   ultimasLecturas: LecturaConFinca[];
+  alertas: ResumenAlertas;
 }
 
 function hoy(): string {
@@ -168,6 +182,8 @@ async function getResumenGeneral(limitUltimasLecturas = 8): Promise<ResumenGener
     limitUltimasLecturas,
   );
 
+  const alertas = await getResumenAlertas(fincas);
+
   return {
     totalFincas: fincas.length,
     fincasActivas: fincas.filter((f) => f.estado === 'activo').length,
@@ -176,10 +192,44 @@ async function getResumenGeneral(limitUltimasLecturas = 8): Promise<ResumenGener
     sensoresActivos,
     lecturasHoy,
     ultimasLecturas,
+    alertas,
+  };
+}
+
+// Alertas de hoy (por fecha de la lectura) y las más recientes de todas las fincas.
+// Si el usuario no tiene permiso de mediciones, las llamadas fallan y se devuelve vacío.
+async function getResumenAlertas(fincas: Finca[], limit = 5): Promise<ResumenAlertas> {
+  const fecha = hoy();
+  const porFinca = await Promise.all(
+    fincas.map(async (finca) => {
+      const [ultimas, hoyTotal, criticas] = await Promise.all([
+        alertasService.getAll(finca.id, {}, 1, limit).then((r) => r.data).catch(() => []),
+        alertasService.getAll(finca.id, { fechaDesde: fecha, fechaHasta: fecha }, 1, 1).then((r) => r.total).catch(() => 0),
+        alertasService
+          .getAll(finca.id, { fechaDesde: fecha, fechaHasta: fecha, severidad: 'critico' }, 1, 1)
+          .then((r) => r.total)
+          .catch(() => 0),
+      ]);
+      return {
+        ultimas: ultimas.map((a) => ({ ...a, fincaId: finca.id, fincaNombre: finca.nombre })),
+        hoyTotal,
+        criticas,
+      };
+    }),
+  );
+
+  return {
+    hoy: porFinca.reduce((sum, f) => sum + f.hoyTotal, 0),
+    criticasHoy: porFinca.reduce((sum, f) => sum + f.criticas, 0),
+    ultimas: porFinca
+      .flatMap((f) => f.ultimas)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit),
   };
 }
 
 const dashboardStatsService = {
+  getResumenAlertas,
   getAllFincas,
   getUltimasLecturasSensores,
   contarLecturasHoy,

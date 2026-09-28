@@ -465,6 +465,7 @@ export function SensoresPage() {
             lat={form.lat}
             lng={form.lng}
             cultivoPoints={cultivos.find(c => c.id === form.cultivoId)?.puntosUbicacion}
+            fincaPoints={selectedFinca?.puntosUbicacion}
             onSetPoint={(lat, lng) => setForm(prev => ({ ...prev, lat: String(lat), lng: String(lng) }))}
             onClearPoint={() => setForm(prev => ({ ...prev, lat: '', lng: '' }))}
           />

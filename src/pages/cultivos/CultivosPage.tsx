@@ -13,7 +13,8 @@ import { isApiError } from '../../services/api/ApiError';
 import type { Cultivo, CultivoFormData } from '../../types/cultivos.types';
 import type { Finca } from '../../types/fincas.types';
 import type { Sensor } from '../../types/sensor.types';
-import { CultivoLocationMap } from './CultivoLocationMap';
+import { PolygonPointsEditor } from '../../components/maps/PolygonPointsEditor';
+import { validatePolygonPoints, type LatLng } from '../../lib/mapGeometry';
 import { FincaSelector } from '../../components/selectors/FincaSelector';
 
 const MAX_PUNTOS = 4;
@@ -35,25 +36,16 @@ function cultivoToForm(cultivo: Cultivo): CultivoFormData {
   };
 }
 
-function validateForm(form: CultivoFormData): Record<string, string> {
+const FUERA_DE_FINCA = 'Los puntos del cultivo deben estar dentro del área de la finca.';
+
+function validateForm(form: CultivoFormData, fincaArea: LatLng[]): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!form.nombre.trim()) errors.nombre = 'El nombre es requerido';
 
-  form.puntosUbicacion.forEach((p, i) => {
-    if (p.lat.trim() && isNaN(parseFloat(p.lat))) errors[`lat_${i}`] = 'Latitud inválida';
-    if (p.lng.trim() && isNaN(parseFloat(p.lng))) errors[`lng_${i}`] = 'Longitud inválida';
-    if (p.lat.trim() && !p.lng.trim()) errors[`lng_${i}`] = 'Ingresa la longitud';
-    if (!p.lat.trim() && p.lng.trim()) errors[`lat_${i}`] = 'Ingresa la latitud';
-  });
-
-  const validPoints = form.puntosUbicacion.filter(
-    p => p.lat.trim() !== '' && p.lng.trim() !== '',
-  );
-  if (validPoints.length < 3) {
-    errors.puntosUbicacion = 'Debes ingresar al menos 3 puntos de ubicación';
-  }
-
-  return errors;
+  return {
+    ...errors,
+    ...validatePolygonPoints(form.puntosUbicacion, { boundary: fincaArea, outsideMessage: FUERA_DE_FINCA }),
+  };
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -179,6 +171,7 @@ function CultivosResumen({ cultivos, sensores, loading }: CultivosResumenProps) 
 export function CultivosPage() {
   const [fincas, setFincas] = useState<Finca[]>([]);
   const [selectedFinca, setSelectedFinca] = useState<Finca | null>(null);
+  const fincaArea = useMemo(() => selectedFinca?.puntosUbicacion ?? [], [selectedFinca]);
   const [loadingFincas, setLoadingFincas] = useState(true);
 
   const [cultivos, setCultivos] = useState<Cultivo[]>([]);
@@ -297,44 +290,6 @@ export function CultivosPage() {
     setModalError(null);
   };
 
-  const addPoint = () => {
-    if (form.puntosUbicacion.length >= MAX_PUNTOS) return;
-    setForm(prev => ({ ...prev, puntosUbicacion: [...prev.puntosUbicacion, { lat: '', lng: '' }] }));
-  };
-
-  const addPointAt = (lat: number, lng: number) => {
-    if (form.puntosUbicacion.length >= MAX_PUNTOS) return;
-    setForm(prev => ({
-      ...prev,
-      puntosUbicacion: [...prev.puntosUbicacion, { lat: String(lat), lng: String(lng) }],
-    }));
-  };
-
-  const removePoint = (index: number) => {
-    setForm(prev => ({
-      ...prev,
-      puntosUbicacion: prev.puntosUbicacion.filter((_, i) => i !== index),
-    }));
-  };
-
-  const updatePoint = (index: number, field: 'lat' | 'lng', value: string) => {
-    setForm(prev => ({
-      ...prev,
-      puntosUbicacion: prev.puntosUbicacion.map((p, i) =>
-        i === index ? { ...p, [field]: value } : p,
-      ),
-    }));
-  };
-
-  const movePoint = (index: number, lat: number, lng: number) => {
-    setForm(prev => ({
-      ...prev,
-      puntosUbicacion: prev.puntosUbicacion.map((p, i) =>
-        i === index ? { lat: String(lat), lng: String(lng) } : p,
-      ),
-    }));
-  };
-
   // ── Submit handlers ─────────────────────────────────────────────────────────
 
   const applyApiErrors = (err: unknown) => {
@@ -349,7 +304,7 @@ export function CultivosPage() {
 
   const handleCreate = async () => {
     if (!selectedFinca) return;
-    const errors = validateForm(form);
+    const errors = validateForm(form, fincaArea);
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSubmitting(true);
     try {
@@ -366,7 +321,7 @@ export function CultivosPage() {
 
   const handleUpdate = async () => {
     if (!selectedFinca || !editTarget) return;
-    const errors = validateForm(form);
+    const errors = validateForm(form, fincaArea);
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return; }
     setSubmitting(true);
     try {
@@ -415,79 +370,16 @@ export function CultivosPage() {
         placeholder="Describe la variedad, condiciones de cultivo…"
       />
 
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium text-slate-700">
-            Puntos de ubicación{' '}
-            <span className="text-xs font-normal text-slate-400">(mín. 3, máx. 4)</span>
-          </label>
-          {form.puntosUbicacion.length < MAX_PUNTOS && (
-            <button
-              type="button"
-              onClick={addPoint}
-              className="flex items-center gap-1 text-xs font-medium text-forest-600 hover:text-forest-700 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Agregar punto
-            </button>
-          )}
-        </div>
-
-        {formErrors.puntosUbicacion && (
-          <p className="mb-2 text-xs text-red-500">{formErrors.puntosUbicacion}</p>
-        )}
-
-        <div className="mb-3">
-          <CultivoLocationMap
-            points={form.puntosUbicacion}
-            maxPoints={MAX_PUNTOS}
-            onAddPoint={addPointAt}
-            onMovePoint={movePoint}
-            onRemovePoint={removePoint}
-          />
-        </div>
-
-        {form.puntosUbicacion.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-200 py-3 text-center text-xs text-slate-400">
-            Sin puntos de ubicación
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {form.puntosUbicacion.map((punto, i) => (
-              <div key={i} className="flex items-start gap-2">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Latitud"
-                    value={punto.lat}
-                    onChange={e => updatePoint(i, 'lat', e.target.value)}
-                    error={formErrors[`lat_${i}`]}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    placeholder="Longitud"
-                    value={punto.lng}
-                    onChange={e => updatePoint(i, 'lng', e.target.value)}
-                    error={formErrors[`lng_${i}`]}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removePoint(i)}
-                  className="mt-2 rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                  aria-label="Eliminar punto"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <PolygonPointsEditor
+        label="Puntos de ubicación"
+        points={form.puntosUbicacion}
+        maxPoints={MAX_PUNTOS}
+        onChange={puntosUbicacion => setForm(prev => ({ ...prev, puntosUbicacion }))}
+        error={formErrors.puntosUbicacion ?? formErrors.puntos_ubicacion}
+        fieldErrors={formErrors}
+        boundaryPoints={fincaArea}
+        outsideBoundaryMessage={FUERA_DE_FINCA}
+      />
     </div>
   );
 

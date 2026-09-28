@@ -31,3 +31,46 @@ export function isPointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
   }
   return inside;
 }
+
+export interface PointFormValue {
+  lat: string;
+  lng: string;
+}
+
+/**
+ * Valida los puntos de un formulario: formato numérico, mínimo 3 puntos y, si se pasa
+ * `boundary` (con 3+ puntos), que cada punto quede dentro de ese polígono.
+ * Claves de error: `lat_${i}`, `lng_${i}` y `puntosUbicacion`.
+ */
+export function validatePolygonPoints(
+  points: PointFormValue[],
+  options: { boundary?: LatLng[]; outsideMessage?: string } = {},
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+
+  points.forEach((p, i) => {
+    if (p.lat.trim() && isNaN(parseFloat(p.lat))) errors[`lat_${i}`] = 'Latitud inválida';
+    if (p.lng.trim() && isNaN(parseFloat(p.lng))) errors[`lng_${i}`] = 'Longitud inválida';
+    if (p.lat.trim() && !p.lng.trim()) errors[`lng_${i}`] = 'Ingresa la longitud';
+    if (!p.lat.trim() && p.lng.trim()) errors[`lat_${i}`] = 'Ingresa la latitud';
+  });
+
+  const validPoints = points.filter(p => p.lat.trim() !== '' && p.lng.trim() !== '');
+  if (validPoints.length < 3) {
+    errors.puntosUbicacion = 'Debes ingresar al menos 3 puntos de ubicación';
+  }
+
+  const boundary = orderPolygonPoints(options.boundary ?? []);
+  if (boundary.length >= 3) {
+    const outside = points.some(p => {
+      const lat = parseFloat(p.lat);
+      const lng = parseFloat(p.lng);
+      return !isNaN(lat) && !isNaN(lng) && !isPointInPolygon({ lat, lng }, boundary);
+    });
+    if (outside) {
+      errors.puntosUbicacion = options.outsideMessage ?? 'Todos los puntos deben estar dentro del área permitida.';
+    }
+  }
+
+  return errors;
+}

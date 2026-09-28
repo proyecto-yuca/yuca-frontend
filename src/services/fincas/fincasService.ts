@@ -17,6 +17,9 @@ function buildBody(formData: FincaFormData) {
         coordenadas: formData.ubicacion.coordenadas || undefined,
         direccion: formData.ubicacion.direccion || undefined,
       },
+      puntos_ubicacion: formData.puntosUbicacion
+        .filter(p => p.lat.trim() !== '' && p.lng.trim() !== '')
+        .map(p => ({ lat: parseFloat(p.lat), lng: parseFloat(p.lng) })),
       dueno: {
         nombre: formData.dueno.nombre,
         tipoDocumento: formData.dueno.tipoDocumento,

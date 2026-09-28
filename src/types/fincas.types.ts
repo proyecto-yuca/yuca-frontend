@@ -1,3 +1,5 @@
+import type { PuntoUbicacion } from './cultivos.types';
+
 export type TipoDocumento = 'CC' | 'NIT' | 'CE' | 'PP';
 export type EstadoFinca = 'activo' | 'inactivo';
 
@@ -24,6 +26,7 @@ export interface Finca {
   descripcion?: string;
   area: number;
   ubicacion: Ubicacion;
+  puntosUbicacion: PuntoUbicacion[];
   dueno: Dueno;
   estado: EstadoFinca;
   fechaRegistro: string;
@@ -40,6 +43,7 @@ export interface FincaFormData {
     coordenadas: string;
     direccion: string;
   };
+  puntosUbicacion: { lat: string; lng: string }[];
   dueno: {
     nombre: string;
     tipoDocumento: TipoDocumento;

@@ -7,7 +7,11 @@ import { Select } from '../../components/ui/Select';
 import { Modal } from '../../components/ui/Modal';
 import { Alert } from '../../components/ui/Alert';
 import { Tabs } from '../../components/ui/Tabs';
+import { PolygonPointsEditor } from '../../components/maps/PolygonPointsEditor';
+import { PolygonPointsMap } from '../../components/maps/PolygonPointsMap';
+import { validatePolygonPoints } from '../../lib/mapGeometry';
 import fincasService from '../../services/fincas/fincasService';
+import { isApiError } from '../../services/api/ApiError';
 import type {
   Finca,
   FincaFormData,
@@ -16,6 +20,7 @@ import type {
 } from '../../types/fincas.types';
 
 const PAGE_SIZE = 6;
+const MAX_PUNTOS_FINCA = 4;
 
 const DEPARTAMENTOS = [
   'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá',
@@ -44,6 +49,7 @@ const EMPTY_FORM: FincaFormData = {
     coordenadas: '',
     direccion: '',
   },
+  puntosUbicacion: [],
   dueno: {
     nombre: '',
     tipoDocumento: 'CC',
@@ -69,7 +75,7 @@ function validateForm(form: FincaFormData): Partial<Record<string, string>> {
     errors['dueno.email'] = 'El email no es válido';
   }
   if (!form.dueno.telefono.trim()) errors['dueno.telefono'] = 'El teléfono es requerido';
-  return errors;
+  return { ...errors, ...validatePolygonPoints(form.puntosUbicacion) };
 }
 
 function fincaToForm(finca: Finca): FincaFormData {
@@ -84,6 +90,10 @@ function fincaToForm(finca: Finca): FincaFormData {
       coordenadas: finca.ubicacion.coordenadas ?? '',
       direccion: finca.ubicacion.direccion ?? '',
     },
+    puntosUbicacion: (finca.puntosUbicacion ?? []).map(p => ({
+      lat: String(p.lat),
+      lng: String(p.lng),
+    })),
     dueno: {
       nombre: finca.dueno.nombre,
       tipoDocumento: finca.dueno.tipoDocumento,
@@ -313,6 +323,27 @@ function LoteForm({ form, errors, onChange }: LoteFormProps) {
             />
           </div>
         </div>
+      </section>
+
+      {/* Área de la finca */}
+      <section>
+        <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-earth-700 mb-3">
+          <span className="flex h-5 w-5 items-center justify-center rounded bg-earth-100 text-earth-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5l6-2 6 3 4-1v14l-4 1-6-3-6 2V5z" />
+            </svg>
+          </span>
+          Área de la Finca
+        </h3>
+        <PolygonPointsEditor
+          label="Puntos del área"
+          points={form.puntosUbicacion}
+          maxPoints={MAX_PUNTOS_FINCA}
+          onChange={(puntosUbicacion) => onChange({ ...form, puntosUbicacion })}
+          error={errors.puntosUbicacion}
+          fieldErrors={errors}
+          emptyMessage="Marca en el mapa los vértices de la finca"
+        />
       </section>
 
       {/* Dueño */}
@@ -619,8 +650,13 @@ export function FincasPage() {
       }
       closeFormModal();
       fetchLotes();
-    } catch {
-      setFormError('Ocurrió un error. Por favor intenta de nuevo.');
+    } catch (err) {
+      const puntosError = isApiError(err) ? err.fieldErrors?.puntos_ubicacion?.[0] : undefined;
+      if (puntosError) {
+        setFormErrors({ puntosUbicacion: puntosError });
+      } else {
+        setFormError('Ocurrió un error. Por favor intenta de nuevo.');
+      }
     } finally {
       setFormLoading(false);
     }
@@ -1011,6 +1047,21 @@ export function FincasPage() {
                     </div>
                   )}
                 </dl>
+              </div>
+
+              {/* Área */}
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 sm:col-span-2">
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">Área de la Finca</p>
+                {(detailModal.puntosUbicacion ?? []).length >= 3 ? (
+                  <PolygonPointsMap
+                    points={detailModal.puntosUbicacion.map(p => ({ lat: String(p.lat), lng: String(p.lng) }))}
+                    maxPoints={MAX_PUNTOS_FINCA}
+                    readOnly
+                    height={220}
+                  />
+                ) : (
+                  <p className="text-xs text-slate-400">Esta finca aún no tiene el área definida.</p>
+                )}
               </div>
 
               {/* Dueño */}

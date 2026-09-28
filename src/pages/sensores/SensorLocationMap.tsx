@@ -6,6 +6,8 @@ interface SensorLocationMapProps {
   lat: string;
   lng: string;
   cultivoPoints?: LatLng[];
+  /** Área de la finca: se dibuja como referencia y limita el sensor si no hay cultivo. */
+  fincaPoints?: LatLng[];
   onSetPoint: (lat: number, lng: number) => void;
   onClearPoint: () => void;
 }
@@ -68,7 +70,7 @@ function FitToArea({ points }: { points: LatLng[] }) {
   return null;
 }
 
-export function SensorLocationMap({ lat, lng, cultivoPoints, onSetPoint, onClearPoint }: SensorLocationMapProps) {
+export function SensorLocationMap({ lat, lng, cultivoPoints, fincaPoints, onSetPoint, onClearPoint }: SensorLocationMapProps) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
   const [warning, setWarning] = useState<string | null>(null);
 
@@ -77,32 +79,39 @@ export function SensorLocationMap({ lat, lng, cultivoPoints, onSetPoint, onClear
     () => orderPolygonPoints(cultivoPoints ?? []),
     [cultivoPoints],
   );
+  const fincaPolygon = useMemo(() => orderPolygonPoints(fincaPoints ?? []), [fincaPoints]);
 
   useEffect(() => setWarning(null), [cultivoPolygon]);
 
+  // El cultivo manda; si no hay cultivo con área, el límite es la finca.
+  const limitPolygon = cultivoPolygon.length >= 3 ? cultivoPolygon : fincaPolygon;
+  const outsideMessage = cultivoPolygon.length >= 3
+    ? 'El sensor debe ubicarse dentro del área del cultivo seleccionado.'
+    : 'El sensor debe ubicarse dentro del área de la finca.';
+
   const isInsideCultivo = useCallback(
-    (candidate: LatLng) => cultivoPolygon.length < 3 || isPointInPolygon(candidate, cultivoPolygon),
-    [cultivoPolygon],
+    (candidate: LatLng) => limitPolygon.length < 3 || isPointInPolygon(candidate, limitPolygon),
+    [limitPolygon],
   );
 
   const fitPoints = useMemo(() => {
-    const pts = [...cultivoPolygon];
+    const pts = [...fincaPolygon, ...cultivoPolygon];
     if (point) pts.push(point);
     return pts;
-  }, [cultivoPolygon, point]);
+  }, [fincaPolygon, cultivoPolygon, point]);
 
   const handleMapClick = useCallback(
     (event: MapMouseEvent) => {
       const latLng = event.detail.latLng;
       if (!latLng) return;
       if (!isInsideCultivo(latLng)) {
-        setWarning('El sensor debe ubicarse dentro del área del cultivo seleccionado.');
+        setWarning(outsideMessage);
         return;
       }
       setWarning(null);
       onSetPoint(latLng.lat, latLng.lng);
     },
-    [isInsideCultivo, onSetPoint],
+    [isInsideCultivo, onSetPoint, outsideMessage],
   );
 
   if (!apiKey) {
@@ -129,6 +138,18 @@ export function SensorLocationMap({ lat, lng, cultivoPoints, onSetPoint, onClear
           >
             <FitToArea points={fitPoints} />
 
+            {fincaPolygon.length >= 3 && (
+              <Polygon
+                paths={fincaPolygon}
+                strokeColor="#b45309"
+                strokeOpacity={0.9}
+                strokeWeight={2}
+                fillColor="#f59e0b"
+                fillOpacity={0.08}
+                clickable={false}
+              />
+            )}
+
             {cultivoPolygon.length >= 3 && (
               <Polygon
                 paths={cultivoPolygon}
@@ -154,7 +175,7 @@ export function SensorLocationMap({ lat, lng, cultivoPoints, onSetPoint, onClear
                   if (!pos) return;
                   const candidate = { lat: pos.lat(), lng: pos.lng() };
                   if (!isInsideCultivo(candidate)) {
-                    setWarning('El sensor debe ubicarse dentro del área del cultivo seleccionado.');
+                    setWarning(outsideMessage);
                     return; // el marcador vuelve a `point` al re-renderizar
                   }
                   setWarning(null);
@@ -173,7 +194,9 @@ export function SensorLocationMap({ lat, lng, cultivoPoints, onSetPoint, onClear
         <p className="text-xs text-slate-400">
           {cultivoPolygon.length >= 3
             ? 'Los puntos verdes marcan el área del cultivo · coloca el sensor dentro de ella.'
-            : 'Clic en el mapa para colocar el sensor'}
+            : fincaPolygon.length >= 3
+              ? 'El borde naranja marca el área de la finca · coloca el sensor dentro de ella.'
+              : 'Clic en el mapa para colocar el sensor'}
           {' '}· arrastra el ícono para moverlo · clic en el ícono para quitar la posición.
         </p>
       )}
